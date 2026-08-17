@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orb — Movements that make a faster rower</title>
+<style>
+:root{
+  --deep:#08191f; --hull:#0e2730; --panel:#123540; --line:#1e4a56;
+  --foam:#e6f0ee; --mist:#93afb4; --amber:#f0b429; --catch:#5bc8c4; --rust:#d0703a;
+  --display:ui-sans-serif,system-ui,"Helvetica Neue",Arial,sans-serif;
+  --body:Georgia,"Iowan Old Style","Times New Roman",serif;
+  --data:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:
+    radial-gradient(120% 80% at 20% -10%, #143946 0%, transparent 60%),
+    var(--deep);
+  color:var(--foam); font-family:var(--body); font-size:17px; line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1080px;margin:0 auto;padding:28px 20px 80px}
+
+/* ---------- masthead ---------- */
+.mast{display:flex;flex-wrap:wrap;align-items:flex-end;gap:16px;justify-content:space-between;
+  border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:22px}
+.mast h1{font-family:var(--display);font-size:15px;font-weight:800;letter-spacing:.16em;
+  text-transform:uppercase;margin:0;color:var(--foam)}
+.mast h1 span{color:var(--amber)}
+.mast .sub{font-family:var(--data);font-size:11px;color:var(--mist);letter-spacing:.08em;margin-top:5px}
+.tools{display:flex;gap:8px;flex-wrap:wrap}
+.tool{font-family:var(--data);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+  background:transparent;color:var(--mist);border:1px solid var(--line);border-radius:2px;
+  padding:7px 11px;cursor:pointer}
+.tool:hover{color:var(--foam);border-color:var(--catch)}
+.tool:focus-visible,.pad:focus-visible,.branch:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+
+/* ---------- trail ---------- */
+.trail{font-family:var(--data);font-size:11px;color:var(--mist);letter-spacing:.04em;
+  margin:0 0 22px;word-break:break-word}
+.trail b{color:var(--catch);font-weight:400}
+.trail em{color:var(--amber);font-style:normal}
+
+/* ---------- layout ---------- */
+.deck{display:grid;grid-template-columns:264px 1fr;gap:34px;align-items:start}
+@media(max-width:820px){.deck{grid-template-columns:1fr;gap:24px}}
+
+/* ---------- orb panel ---------- */
+.orbpanel{position:sticky;top:20px}
+@media(max-width:820px){.orbpanel{position:static}}
+.orbsvg{width:100%;height:auto;display:block}
+.gauges{margin-top:14px;border-top:1px solid var(--line)}
+.gauge{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);
+  font-family:var(--data);font-size:11px;letter-spacing:.06em}
+.gauge .k{color:var(--mist);text-transform:uppercase}
+.gauge .v{color:var(--amber);text-align:right}
+.mode{font-family:var(--data);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--mist);margin-top:12px}
+.mode b{color:var(--catch);font-weight:400}
+.pt{cursor:pointer;transition:r .12s ease}
+.pt:hover{fill:var(--amber)}
+.legend{font-family:var(--data);font-size:10px;color:var(--mist);margin-top:10px;line-height:1.9}
+.legend i{font-style:normal;display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle}
+.legend .here{background:var(--amber)}.legend .been{background:var(--catch)}
+.legend .unv{background:#2e6270}.legend .fr{background:var(--rust)}
+
+/* ---------- view ---------- */
+.pos{font-family:var(--display);font-weight:800;letter-spacing:-.02em;font-size:30px;line-height:1.14;margin:0 0 6px}
+@media(max-width:520px){.pos{font-size:24px}}
+.alt{font-family:var(--data);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);margin-bottom:20px}
+.scenery{font-family:var(--data);font-size:12.5px;line-height:1.7;color:var(--mist);
+  border-left:2px solid var(--catch);padding:2px 0 2px 14px;margin-bottom:22px}
+.reading p{margin:0 0 15px}
+.reading p:last-child{margin-bottom:0}
+.reading b{color:var(--amber);font-weight:700}
+.reading .num{font-family:var(--data);font-size:.9em;color:var(--catch)}
+.figure{margin:22px 0 24px;background:var(--hull);border:1px solid var(--line);border-radius:3px;padding:16px 14px 10px}
+.figure svg{width:100%;height:auto;display:block}
+.figcap{font-family:var(--data);font-size:10.5px;letter-spacing:.06em;color:var(--mist);
+  text-transform:uppercase;margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
+
+/* ---------- compass ---------- */
+.compass{margin-top:34px;border-top:1px solid var(--line);padding-top:22px}
+.compass .lbl{font-family:var(--data);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--mist);margin-bottom:14px}
+.cross{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.cross .up,.cross .down{grid-column:1 / -1}
+@media(max-width:560px){.cross{grid-template-columns:1fr}.cross .up,.cross .down{grid-column:auto}}
+.padwrap{background:var(--panel);border:1px solid var(--line);border-radius:3px;overflow:hidden}
+.padwrap:hover{border-color:var(--catch)}
+.pad{display:block;width:100%;text-align:left;background:transparent;border:0;color:var(--foam);
+  padding:14px 15px;cursor:pointer;font-family:var(--body);font-size:16px;line-height:1.35}
+.pad .dir{display:block;font-family:var(--data);font-size:10px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--catch);margin-bottom:6px}
+.pad .gloss{display:block;font-family:var(--data);font-size:11px;color:var(--mist);margin-top:6px;letter-spacing:.02em}
+.fan{border-top:1px dashed var(--line);padding:6px 0}
+.branch{display:block;width:100%;text-align:left;background:transparent;border:0;cursor:pointer;
+  color:var(--mist);font-family:var(--data);font-size:12px;padding:7px 15px;letter-spacing:.02em}
+.branch:hover{color:var(--amber)}
+.branch::before{content:"└ ";color:var(--line)}
+.frontier .pos{color:var(--rust)}
+.frontier .alt{color:var(--rust)}
+.frontier .scenery{border-left-color:var(--rust)}
+
+/* ---------- dossier (print-all) ---------- */
+#dossier{display:none}
+#dossier.on{display:block}
+#dossier .stop{border-top:1px solid var(--line);padding-top:22px;margin-top:34px}
+#dossier h2{font-family:var(--display);font-size:22px;letter-spacing:-.01em;margin:0 0 4px}
+#dossier .alt{margin-bottom:14px}
+#dossier .figure{max-width:520px}
+.hidden{display:none !important}
+
+@media print{
+  body{background:#fff;color:#111}
+  .tools,.compass,.orbpanel,.trail{display:none !important}
+  .deck{display:block}
+  #dossier{display:block}
+  .figure{background:#fff;border-color:#bbb;break-inside:avoid}
+  .pos,#dossier h2{color:#111}
+  .alt{color:#8a5a00}
+  .scenery{color:#444;border-left-color:#888}
+  .figcap{color:#555}
+  .reading b{color:#111}
+  svg{filter:invert(0)}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="mast">
+    <div>
+      <h1>Orb <span>·</span> Movements that make a faster rower</h1>
+      <div class="sub">noun mode · shape: centered · field of view 4 · step 1 · creative off</div>
+    </div>
+    <div class="tools">
+      <button class="tool" id="btnBack">← back</button>
+      <button class="tool" id="btnHome">re-center</button>
+      <button class="tool" id="btnAll">print all stops</button>
+    </div>
+  </div>
+
+  <p class="trail" id="trail"></p>
+
+  <div class="deck" id="live">
+    <div class="orbpanel">
+      <svg class="orbsvg" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <defs>
+          <radialGradient id="sph" cx="35%" cy="28%">
+            <stop offset="0%" stop-color="#1c4f5e"/>
+            <stop offset="100%" stop-color="#0a2029"/>
+          </radialGradient>
+        </defs>
+        <circle cx="110" cy="110" r="78" fill="url(#sph)" stroke="#1e4a56"/>
+        <!-- latitude rings = stacked force curves -->
+        <g fill="none" stroke="#1e4a56" stroke-width="1">
+          <ellipse cx="110" cy="50"  rx="44.9" ry="8"/>
+          <ellipse cx="110" cy="76"  rx="63.0" ry="11"/>
+          <ellipse cx="110" cy="102" rx="70.0" ry="13"/>
+          <ellipse cx="110" cy="128" rx="68.4" ry="13"/>
+          <ellipse cx="110" cy="152" rx="58.5" ry="11"/>
+          <ellipse cx="110" cy="174" rx="40.6" ry="8"/>
+        </g>
+        <path d="M40 110 C 62 74, 92 66, 110 84 C 132 106, 158 120, 180 110"
+              fill="none" stroke="#5bc8c4" stroke-width="1.4" opacity=".55"/>
+        <g id="nodes"></g>
+        <polyline id="trailline" fill="none" stroke="#f0b429" stroke-width="1" opacity=".45" stroke-dasharray="2 3" points=""/>
+        <circle id="marker" cx="110" cy="110" r="5.5" fill="#f0b429"/>
+        <circle id="markerhalo" cx="110" cy="110" r="11" fill="none" stroke="#f0b429" opacity=".35"/>
+      </svg>
+
+      <div class="gauges" id="gauges"></div>
+      <div class="legend">
+        <i class="here"></i>here &nbsp; <i class="been"></i>visited<br>
+        <i class="unv"></i>unvisited &nbsp; <i class="fr"></i>frontier<br>
+        <span style="opacity:.75">32 stops · faded = far side of the orb · click any point to teleport</span>
+      </div>
+      <div class="mode">the drive curve is the ring · <b id="shapelbl">centered</b></div>
+    </div>
+
+    <div id="view"></div>
+  </div>
+
+  <div id="dossier"></div>
+</div>
+
+<script>
+/* ============================================================
+   ORBPRINT — static navigable orb
+   Topic: the movements that make a faster rower
+   Mode: noun · Shape: centered · FOV 4 · Step 1
+   ============================================================ */
+
+const N = {
+
+/* ---------------- CEILING ---------------- */
+adapt:{
+  t:"Specificity of adaptation — why any exercise transfers at all",
+  alt:"principle level · the ceiling of this orb",
+  lvl:0, ring:0,
+  ins:["4 levels","open sky","3 facets","coarse"],
+  sc:"Above you: motor learning, physiology, the whole apparatus of training theory. Below: every sport that ever asked what to lift.",
+  rd:`<p>Every question of the form <i>"what should I do in the gym to get faster on the water?"</i> is a specificity question, and specificity is narrower than most athletes want it to be. The body adapts to the exact demand imposed — the joint angles, the contraction velocity, the energy system, the duration. Move away from the competition demand on any of those axes and transfer decays.</p>
+  <p>Rowing's demand is unusual and worth stating precisely: a <b>continuous, cyclic, near-maximal aerobic effort of 5:30–7:30</b>, produced by a leg-dominated closed-chain push against a moving seat, transmitted through a rigid trunk into a horizontal pull. Peak handle force in a strong rower runs <span class="num">700–1000 N</span>, repeated <span class="num">~220–240</span> times in a 2k without meaningful rest.</p>
+  <p>That combination is why the gym answer is not "get strong" and not "do more cardio." It is: build a force reserve large enough that race-pace strokes sit at a low fraction of maximum, build the tissue that survives 240 loaded flexion-extension cycles, and spend most of your hours on the aerobic engine that actually sets the ceiling. Everything below this position is a specific instance of that trade.</p>`,
+  illo:`<svg viewBox="0 0 520 150" xmlns="http://www.w3.org/2000/svg">
+    <text x="0" y="12" fill="#93afb4" font-family="ui-monospace,monospace" font-size="10">TRANSFER DECAYS WITH DISTANCE FROM THE RACE DEMAND</text>
+    <line x1="0" y1="118" x2="500" y2="118" stroke="#1e4a56"/>
+    <path d="M10 34 C 120 40, 210 70, 300 96 C 370 112, 440 116, 500 117" fill="none" stroke="#5bc8c4" stroke-width="2"/>
+    <g font-family="ui-monospace,monospace" font-size="9" fill="#93afb4">
+      <circle cx="20" cy="36" r="3.5" fill="#f0b429"/><text x="30" y="34">the erg itself</text>
+      <circle cx="150" cy="50" r="3.5" fill="#f0b429"/><text x="160" y="48">heavy hinge · leg drive</text>
+      <circle cx="300" cy="96" r="3.5" fill="#f0b429"/><text x="310" y="94">general hypertrophy</text>
+      <circle cx="440" cy="115" r="3.5" fill="#f0b429"/><text x="330" y="132">isolated arm work</text>
+    </g>
+    <text x="0" y="140" fill="#5bc8c4" font-family="ui-monospace,monospace" font-size="9">← closer to the demand          further →</text>
+  </svg>`,
+  cap:"Specificity curve — the further a movement sits from the race demand, the more of its gain stays in the gym.",
+  mv:[
+    {d:"DOWN",l:"Strength work for endurance-power athletes",to:"sce",g:"the discipline that sits under the principle"},
+    {d:"LEFT",l:"Concurrent training: does lifting cost you aerobic gains?",to:"interference",g:"frontier · an unsettled trade"},
+    {d:"RIGHT",l:"Rate of force development vs. maximum strength",to:"rfd",g:"how fast, not how much"},
+    {d:"DOWN",l:"Re-center on the movements themselves",to:"root",g:"drop straight to the working level"}
+  ]
+},
+
+sce:{
+  t:"Strength training for endurance-power athletes",
+  alt:"discipline level",
+  lvl:1, ring:0,
+  ins:["3 levels","1 above","4 facets","medium"],
+  sc:"Neighbours on this ring: cycling's torque work, swimming's dryland, cross-country skiing's double-pole strength — all solving the same problem with different levers.",
+  rd:`<p>Endurance-power sports occupy an awkward middle. Pure strength athletes lift heavy and rest long. Pure endurance athletes accumulate hours. Rowers need both, in the same week, in bodies that are already carrying <span class="num">14–20</span> hours of aerobic work.</p>
+  <p>The discipline has converged on a few working rules. Lift <b>heavy and low-volume</b> rather than light and high-rep: the aerobic training already supplies fatigue resistance, so the gym's unique contribution is maximal force and the neural drive behind it. Sets of <span class="num">3–6</span> at <span class="num">80–90%</span> of maximum, two to three sessions a week, is the standard prescription. High-rep "muscular endurance" circuits duplicate what the erg already does, at the cost of recovery.</p>
+  <p>Second rule: <b>protect the aerobic session.</b> When lifting and rowing land on the same day, separate them by at least three hours, and put the quality session first. Third: keep the lift list short. Four to six movements, trained for years, beat twenty movements rotated monthly — the strength gain that transfers is largely a neural one, and neural gains are movement-specific.</p>`,
+  illo:`<svg viewBox="0 0 520 160" xmlns="http://www.w3.org/2000/svg">
+    <text x="0" y="12" fill="#93afb4" font-family="ui-monospace,monospace" font-size="10">WHERE THE ROWER SITS</text>
+    <line x1="20" y1="120" x2="500" y2="120" stroke="#1e4a56"/>
+    <line x1="20" y1="120" x2="20" y2="30" stroke="#1e4a56"/>
+    <text x="24" y="28" fill="#93afb4" font-family="ui-monospace,monospace" font-size="9">force</text>
+    <text x="440" y="136" fill="#93afb4" font-family="ui-monospace,monospace" font-size="9">duration</text>
+    <circle cx="70" cy="46" r="6" fill="#1e4a56"/><text x="82" y="50" fill="#93afb4" font-family="ui-monospace,monospace" font-size="9">powerlifter</text>
+    <circle cx="430" cy="104" r="6" fill="#1e4a56"/><text x="330" y="98" fill="#93afb4" font-family="ui-monospace,monospace" font-size="9">marathoner</text>
+    <circle cx="205" cy="70" r="8" fill="#f0b429"/><text x="218" y="74" fill="#f0b429" font-family="ui-monospace,monospace" font-size="9">rower — 2k, 6 min, 240 strokes</text>
+    <path d="M70 46 C 140 52, 300 92, 430 104" fill="none" stroke="#5bc8c4" stroke-width="1.2" stroke-dasharray="3 3"/>
+  </svg>`,
+  cap:"The rower sits high on both axes — which is why the programme has to serve two masters.",
+  mv:[
+    {d:"UP",l:"Specificity of adaptation",to:"adapt",g:"the principle above the discipline"},
+    {d:"DOWN",l:"The movement list itself",to:"root",g:"what actually goes in the programme",
+      fan:[{l:"straight to the heaviest lift: the deadlift",to:"deadlift"},{l:"straight to the erg-specific work",to:"ergwork"}]},
+    {d:"LEFT",l:"How much of a 2k does strength actually explain?",to:"strength2k",g:"frontier · the evidence is thinner than the gym talk"},
+    {d:"RIGHT",l:"Concurrent training interference",to:"interference",g:"the cost side of the ledger"}
+  ]
+},
+
+/* ---------------- ROOT ---------------- */
+root:{
+  t:"The movements that make a faster rower",
+  alt:"training-domain level · you are here",
+  lvl:2, ring:0,
+  ins:["3 levels","2 above","6 facets","medium"],
+  sc:"Six facets ring this position: the hinge, the leg drive, the horizontal pull, the trunk that connects them, the erg work that is the stroke itself, and the aerobic engine underneath everything.",
+  rd:`<p>Start with the honest hierarchy, because it determines where your hours should go. For 2k performance, the strongest single predictor is <b>aerobic power</b> — VO₂max and the fraction of it you can hold. Strength is a <b>modifier</b>: it raises the force available per stroke, lowers the percentage of maximum each race stroke costs, and protects the spine and ribs from 240 loaded cycles. It is not the ceiling, but it is often the brake.</p>
+  <p>The coaching heuristic for the drive is roughly <b>legs 60%, trunk/hips 30%, arms 10%</b>. It is a teaching approximation, not a measurement, but it points the gym in the right direction: the movements with the best transfer are the ones that produce large forces through the hip and knee with a braced, neutral spine, and the ones that teach the trunk to transmit rather than absorb.</p>
+  <p>A short list does most of the work. A heavy <b>hinge</b>. A deep <b>squat</b> pattern. A heavy <b>horizontal pull</b>. Something <b>anti-flexion</b> for the trunk. A <b>hamstring eccentric</b>. Then the erg-specific work — sequencing, force curve, rate — and the aerobic base underneath it all. Everything else is seasoning. Pick a direction.</p>`,
+  illo:`<svg viewBox="0 0 520 190" xmlns="http://www.w3.org/2000/svg">
+    <text x="0" y="12" fill="#93afb4" font-family="ui-monospace,monospace" font-size="10">THE DRIVE, BY CONTRIBUTION (COACHING HEURISTIC)</text>
+    <rect x="0" y="26" width="300" height="26" fill="#5bc8c4" opacity=".85"/>
+    <rect x="300" y="26" width="150" height="26" fill="#f0b429" opacity=".8"/>
+    <rect x="450" y="26" width="50" height="26" fill="#d0703a" opacity=".8"/>
+    <text x="8" y="44" fill="#08191f" font-family="ui-monospace,monospace" font-size="11">LEGS 60%</text>
+    <text x="308" y="44" fill="#08191f" font-family="ui-monospace,monospace" font-size="11">TRUNK 30%</text>
+    <text x="456" y="44" fill="#08191f" font-family="ui-monospace,monospace" font-size="10">ARMS</text>
+    <!-- stroke stick figure -->
+    <g stroke="#93afb4" fill="none" stroke-width="1.6">
+      <path d="M40 150 L 80 150"/><circle cx="66" cy="120" r="7"/>
+      <path d="M66 127 L 62 145 L 40 150"/><path d="M62 145 L 86 138"/>
+    </g>
+    <text x="34" y="176" fill="#93afb4" font-family="ui-monospace,monospace" font-size="9">CATCH</text>
+    <g stroke="#f0b429" fill="none" stroke-width="1.6">
+      <path d="M200 150 L 250 150"/><circle cx="220" cy="112" r="7"/>
+      <path d="M220 119 L 222 142 L 250 150"/><path d="M222 142 L 246 132"/>
+    </g>
+    <text x="192" y="176" fill="#f0b429" font-family="ui-monospace,monospace" font-size="9">LEG DRIVE</text>
+    <g stroke="#5bc8c4" fill="none" stroke-width="1.6">
+      <path d="M380 150 L 440 150"/><circle cx="392" cy="108" r="7"/>
+      <path d="M392 115 L 400 142 L 440 150"/><path d="M400 142 L 424 126"/>
+    </g>
+    <text x="370" y="176" fill="#5bc8c4" font-family="ui-monospace,monospace" font-size="9">FINISH</text>
+    <path d="M96 158 L 186 158" stroke="#1e4a56"/>
+    <path d="M266 158 L 366 158" stroke="#1e4a56"/>
+  </svg>`,
+  cap:"One stroke, three positions — and the share of work each segment is taught to own.",
+  mv:[
+    {d:"UP",l:"Strength work for endurance-power athletes",to:"sce",g:"the discipline this sits inside"},
+    {d:"DOWN",l:"The hip hinge and posterior chain",to:"hinge",g:"the single highest-value family",
+      fan:[{l:"the squat pattern and leg drive",to:"legdrive"},{l:"the horizontal pull",to:"pull"}]},
+    {d:"LEFT",l:"The trunk — the transmission, not the engine",to:"trunk",g:"where power leaks",
+      fan:[{l:"the erg itself: stroke-specific work",to:"ergwork"}]},
+    {d:"RIGHT",l:"The aerobic engine underneath all of it",to:"engine",g:"the actual ceiling",
+      fan:[{l:"cross-modal transfer: ski, bike, run",to:"crossmodal"}]}
+  ]
+},
+
+/* ---------------- RING: SIX FACETS ---------------- */
+hinge:{
+  t:"The hip hinge and posterior chain",
+  alt:"movement-family level",
+  lvl:3, ring:0,
+  ins:["2 levels","3 above","6 facets","fine"],
+  sc:"Left on this ring is the squat pattern; right is the horizontal pull. Both are neighbours because the stroke passes through all three in sequence.",
+  rd:`<p>If you get one movement family, take this one. The rowing stroke's middle third — the moment the legs are down and the back swings open — <i>is</i> a hip hinge under load, performed roughly 240 times per race while the spine is asked to stay rigid. Every hinge you do in the gym is direct rehearsal of that segment.</p>
+  <p>The family has three jobs. <b>Force</b>: the deadlift and its variants build the raw hip extension torque that the drive draws on. <b>Tissue</b>: heavy hinging thickens the erector spinae, glutes and hamstrings, which is the actual defence against the low back pain that <span class="num">25–50%</span> of rowers report in a given year. <b>Position</b>: hinging teaches the athlete to move at the hip while the lumbar spine holds neutral — the exact skill that collapses at the catch when a rower is tired and starts rounding into the shins.</p>
+  <p>Programme it as the anchor of one or two lifting sessions a week. Sets of <span class="num">3–5</span>, heavy, well short of failure, with the last rep looking like the first. Hinging to technical failure in a rower's week is how you buy a back injury with a strength adaptation you did not need.</p>`,
+  illo:`<svg viewBox="0 0 520 170" xmlns="http://www.w3.org/2000/svg">
+    <text x="0" y="12" fill="#93afb4" font-family="ui-monospace,monospace" font-size="10">HINGE vs. ROUND — SAME EXTERNAL LOAD, DIFFERENT TISSUE PAYING</text>
+    <g stroke="#5bc8c4" fill="none" stroke-width="2">
+      <circle cx="120" cy="46" r="8"/>
+      <path d="M120 54 L 132 104"/>
+      <path d="M132 104 L 128 148"/>
+      <path d="M120 60 L 104 108"/>
+    </g>
+    <text x="86" y="164" fill="#5bc8c4" font-family="ui-monospace,monospace" font-size="9">NEUTRAL — HIP MOVES</text>
+    <g stroke="#d0703a" fill="none" stroke-width="2">
+      <circle cx="360" cy="56" r="8"/>
+      <path d="M360 64 C 372 84, 366 96, 372 106"/>
+      <path d="M372 106 L 368 148"/>
+      <path d="M360 70 L 344 110"/>
+    </g>
+    <text x="322" y="164" fill="#d0703a" font-family="ui-monospace,monospace" font-size="9">FLEXED — DISC MOVES</text>
+    <line x1="250" y1="30" x2="250" y2="150" stroke="#1e4a56" stroke-dasharray="3 4"/>
+  </svg>`,
+  cap:"The hinge is a skill before it is a lift: the load has to land on hip extensors, not on a flexing lumbar spine.",
+  mv:[
+    {d:"UP",l:"Back to the movement list",to:"root",g:"the whole ring"},
+    {d:"DOWN",l:"The deadlift — trap-bar and conventional",to:"deadlift",g:"the anchor lift",
+      fan:[{l:"the RDL and hamstring eccentrics",to:"rdl"}]},
+    {d:"LEFT",l:"The squat pattern and leg drive",to:"legdrive",g:"one facet around the ring"},
+    {d:"RIGHT",l:"The horizontal pull and upper back",to:"pull",g:"the other way around the ring"}
+  ]
+},
+
+legdrive:{
+  t:"The squat pattern and leg drive",
+  alt:"movement-family level",
+  lvl:3, ring:1,
+  ins:["2 levels","3 above","6 facets","fine"],
+  sc:"You have rotated one facet from the hinge. The catch position — shins vertical or past, heels loaded, trunk closed — lives here.",
+  rd:`<p>The leg drive is where the stroke's power is made, and it starts from a deeply flexed position that most people cannot hold under load without practice. At the catch the knee is flexed past <span class="num">110–120°</span>, the ankle is in near-end-range dorsiflexion, and the trunk is folded forward over the thighs. That is a bottom-of-a-deep-squat shape, held with the arms extended in front.</p>
+  <p>So the squat family earns its place twice. It builds <b>knee extensor force</b> at the joint angles the catch actually uses, and it maintains the <b>range of motion</b> that lets a rower reach full compression without dumping the lumbar spine. A front squat is often the better fit than a back squat here: the upright torso and the front-rack demand mirror the catch, and it self-limits before the back rounds.</p>
+  <p>Two cautions specific to rowers. First, depth beats load — a shallow heavy squat trains a joint angle the stroke never visits. Second, the seat is a single point of contact and the legs work together, but rowers still develop side-to-side asymmetries, especially sweep rowers. Single-leg work is the cheapest correction available.</p>`,
+  illo:`<svg viewBox="0 0 520 170" xmlns="http://www.w3.org/2000/svg">
+    <text x="0" y="12" fill="#93afb4" font-family="ui-monospace,monospace" font-size="10">JOINT ANGLES: CATCH vs. SQUAT DEPTH</text>
+    <g font-family="ui-monospace,monospace" font-size="9" fill="#93afb4">
+      <text x="0" y="46">knee flexion</text><text x="0" y="86">hip flexion</text><text x="0" y="126">ankle dorsiflexion</text>
+    </g>
+    <g>
+      <rect x="110" y="34" width="300" height="14" fill="#1e4a56"/><rect x="110" y="34" width="255" height="14" fill="#5bc8c4"/>
+      <rect x="110" y="74" width="300" height="14" fill="#1e4a56"/><rect x="110" y="74" width="270" height="14" fill="#5bc8c4"/>
+      <rect x="110" y="114" width="300" height="14" fill="#1e4a56"/><rect x="110" y="114" width="200" height="14" fill="#5bc8c4"/>
+    </g>
+    <g stroke="#f0b429" stroke-width="1.5" stroke-dasharray="4 3">
+      <line x1="365" y1="28" x2="365" y2="54"/><line x1="380" y1="68" x2="380" y2="94"/><line x1="310" y1="108" x2="310" y2="134"/>
+    </g>
+    <text x="110" y="152" fill="#f0b429" font-family="ui-monospace,monospace" font-size="9">— dashed = the catch · bar = a full-depth squat</text>
+  </svg>`,
+  cap:"The catch lives near the bottom of a deep squat. Train the depth or the position degrades under fatigue.",
+  mv:[
+    {d:"UP",l:"Back to the movement list",to:"root",g:"the whole ring"},
+    {d:"DOWN",l:"Back squat, front squat and depth",to:"squat",g:"the anchor lift here",
+      fan:[{l:"single-leg work and asymmetry",to:"singleleg"},{l:"jumps and triple extension",to:"jump"}]},
+    {d:"LEFT",l:"The trunk — transmission, not engine",to:"trunk",g:"one facet around"},
+    {d:"RIGHT",l:"The hip hinge and posterior chain",to:"hinge",g:"the other way around"}
+  ]
+},
+
+pull:{
+  t:"The horizontal pull and upper back",
+  alt:"movement-family level",
+  lvl:3, ring:2,
+  ins:["2 levels","3 above","6 facets","fine"],
+  sc:"The stroke's last third and its entire recovery. Neighbours: the hinge behind you, the trunk ahead.",
+  rd:`<p>The arms contribute maybe a tenth of the stroke's power, which is why upper-body work is chronically over-programmed by beginners and under-programmed by everyone who overcorrected. The upper back's real job in rowing is not to generate force — it is to <b>hold the connection</b> so the legs' force reaches the handle without being absorbed by a soft shoulder girdle.</p>
+  <p>That reframes the exercise selection. The valuable movements are heavy <b>horizontal pulls</b> — barbell row, chest-supported row, single-arm dumbbell row — trained for scapular retraction under load, plus <b>vertical pulling</b> for lat size and shoulder integrity. The lats matter more than they look: they are the link between the arm and the trunk, and they are what keeps the handle path flat when the back swing opens.</p>
+  <p>The other half of the family is durability. Rowing is a wildly pull-dominant sport, and the imbalance shows up as anterior shoulder pain and cranky scapulae. A small, boring dose of <b>external rotation and scapular control</b> work — face pulls, band pull-aparts, prone Y-raises — pays for itself. So does actually pressing something occasionally, despite the sport never asking you to.</p>`,
+  illo:`<svg viewBox="0 0 520 170" xmlns="http://www.w3.org/2000/svg">
+    <text x="0" y="12" fill="#93afb4" font-family="ui-monospace,monospace" font-size="10">THE CHAIN: FORCE REACHES THE HANDLE ONLY IF EVERY LINK HOLDS</text>
+    <g stroke="#1e4a56" stroke-width="2" fill="none"><path d="M30 90 L 470 90"/></g>
+    <g font-family="ui-monospace,monospace" font-size="9" fill="#93afb4" text-anchor="middle">
+      <circle cx="40" cy="90" r="9" fill="#5bc8c4"/><text x="40" y="118">footplate</text>
+      <circle cx="140" cy="90" r="9" fill="#5bc8c4"/><text x="140" y="118">hips</text>
+      <circle cx="240" cy="90" r="9" fill="#5bc8c4"/><text x="240" y="118">trunk</text>
+      <circle cx="340" cy="90" r="9" fill="#f0b429"/><text x="340" y="118" fill="#f0b429">scapula</text>
+      <circle cx="440" cy="90" r="9" fill="#f0b429"/><text x="440" y="118" fill="#f0b429">handle</text>
+    </g>
+    <path d="M330 62 C 340 50, 350 50, 356 60" fill="none" stroke="#d0703a" stroke-width="1.6"/>
+    <text x="300" y="46" fill="#d0703a" font-family="ui-monospace,monospace" font-size="9">soft link = leaked watts</text>
+  </svg>`,
+  cap:"The upper back is a link in a chain, not a motor. It is graded on how little it gives.",
+  mv:[
+    {d:"UP",l:"Back to the movement list",to:"root",g:"the whole ring"},
+    {d:"DOWN",l:"Barbell and chest-supported rows",to:"rowpull",g:"the heaviest thing here",
+      fan:[{l:"pull-ups and lat work",to:"pullup"},{l:"shoulder durability work",to:"shoulder"}]},
+    {d:"LEFT",l:"The hip hinge and posterior chain",to:"hinge",g:"one facet around"},
+    {d:"RIGHT",l:"The erg itself: stroke-specific work",to:"ergwork",g:"the other way around"}
+  ]
+},
+
+trunk:{
+  t:"The trunk — the transmission, not the engine",
+  alt:"movement-family level",
+  lvl:3, ring:3,
+  ins:["2 levels","3 above","6 facets","medium"],
+  sc:"Between the leg drive and the pull sits the part of the body that produces almost nothing and decides almost everything.",
+  rd:`<p>Here is the mechanical case in one sentence: force generated at the footplate can only reach the handle through a trunk that does not change shape while it happens. Anything the trunk gives up in flexion is watts you paid for and did not receive.</p>
+  <p>So the useful training is not <i>flexion</i> work — situps, crunches, and the like recruit the hip flexors and rehearse the exact failure mode you are trying to prevent. It is <b>anti-flexion and anti-rotation</b>: planks and their loaded variants, dead bugs, ab wheel rollouts, Pallof presses, and above all heavy carries and heavy hinges, which train bracing while something real is trying to bend you.</p>
+  <p>The second reason to care is medical rather than mechanical. The two signature rowing injuries — <b>low back pain</b> and <b>rib stress injury</b> — both live in this region and both correlate with fatigue-driven loss of trunk position, high training volume increases, and, for ribs, the compressive pull of serratus anterior and the obliques on a cage that is being loaded 240 times a piece. Trunk work is the cheapest injury insurance in the sport.</p>`,
+  illo:`<svg viewBox="0 0 520 160" xmlns="http://www.w3.org/2000/svg">
+    <text x="0" y="12" fill="#93afb4" font-family="ui-monospace,monospace" font-size="10">RIGID SEGMENT = FULL TRANSMISSION</text>
+    <g stroke="#5bc8c4" stroke-width="3" fill="none"><path d="M60 100 L 200 60"/></g>
+    <path d="M30 112 L 58 102" stroke="#f0b429" stroke-width="6"/>
+    <path d="M204 58 L 240 50" stroke="#f0b429" stroke-width="6"/>
+    <text x="40" y="140" fill="#93afb4" font-family="ui-monospace,monospace" font-size="9">100% ARRIVES</text>
+    <g stroke="#d0703a" stroke-width="3" fill="none"><path d="M320 100 C 360 96, 380 70, 430 66"/></g>
+    <path d="M290 112 L 318 102" stroke="#f0b429" stroke-width="6"/>
+    <path d="M434 65 L 460 62" stroke="#f0b429" stroke-width="3"/>
+    <text x="300" y="140" fill="#d0703a" font-family="ui-monospace,monospace" font-size="9">SOFT SEGMENT — FORCE ABSORBED IN THE BEND</text>
+  </svg>`,
+  cap:"Two identical footplate pushes. The difference at the handle is entirely a bracing story.",
+  mv:[
+    {d:"UP",l:"Back to the movement list",to:"root",g:"the whole ring"},
+    {d:"DOWN",l:"Anti-flexion and anti-rotation work",to:"antiflex",g:"the actual exercises",
+      fan:[{l:"rib stress injury — the sport's signature",to:"ribs"}]},
+    {d:"LEFT",l:"The erg itself: stroke-specific work",to:"ergwork",g:"one facet around"},
+    {d:"RIGHT",l:"The squat pattern and leg drive",to:"legdrive",g:"the other way around"}
+  ]
+},
+
+ergwork:{
+  t:"The erg itself — stroke-specific work",
+  alt:"movement-family level",
+  lvl:3, ring:4,
+  ins:["2 levels","3 above","6 facets","fine"],
+  sc:"The closest facet to the demand. Everything here has a transfer coefficient close to one, and a much lower ceiling for novelty.",
+  rd:`<p>No gym movement transfers as well as the stroke, done correctly, a great many times. The catch is that "correctly" is doing real work in that sentence — a rower with a broken sequence who adds volume gets better at the broken sequence.</p>
+  <p>The high-value work here is not more steady state. It is the deliberate practice that most people skip: <b>drive sequencing drills</b> (legs-only, legs-and-body, pause drills at the finish and at quarter-slide), <b>force curve work</b> on the PM5's graph, <b>drag factor</b> set honestly rather than by damper position, and <b>rate-power decoupling</b> — learning to hold the same split at 20, 24, 28 and 32 strokes per minute.</p>
+  <p>That last one is the most underrated instrument in the sport. Being able to produce <span class="num">220 W</span> at rate 20 and at rate 32 means the difference between them is entirely a choice about pacing, not a capacity limit. Most amateur rowers can only reach their power at high rate, which means they arrive at the last <span class="num">500 m</span> with no lever left to pull.</p>`,
+  illo:`<svg viewBox="0 0 520 175" xmlns="http://www.w3.org/2000/svg">
+    <text x="0" y="12" fill="#93afb4" font-family="ui-monospace,monospace" font-size="10">POWER AT A GIVEN RATE — TWO ROWERS, SAME 2k</text>
+    <line x1="40" y1="140" x2="500" y2="140" stroke="#1e4a56"/>
+    <line x1="40" y1="140" x2="40" y2="28" stroke="#1e4a56"/>
+    <g font-family="ui-monospace,monospace" font-size="9" fill="#93afb4">
+      <text x="60" y="154">r18</text><text x="160" y="154">r22</text><text x="260" y="154">r26</text><text x="360" y="154">r30</text><text x="450" y="154">r34</text>
+      <text x="6" y="44">W</text>
+    </g>
+    <path d="M66 116 L 166 96 L 266 76 L 366 60 L 456 50" fill="none" stroke="#5bc8c4" stroke-width="2"/>
+    <path d="M66 134 L 166 126 L 266 108 L 366 70 L 456 52" fill="none" stroke="#d0703a" stroke-width="2" stroke-dasharray="4 3"/>
+    <text x="200" y="46" fill="#5bc8c4" font-family="ui-monospace,monospace" font-size="9">decoupled — power at any rate</text>
+    <text x="200" y="126" fill="#d0703a" font-family="ui-monospace,monospace" font-size="9">rate-dependent — power only arrives late</text>
+  </svg>`,
+  cap:"The flatter line owns its pacing. The steep line has to sprint to find its watts.",
+  mv:[
+    {d:"UP",l:"Back to the movement list",to:"root",g:"the whole ring"},
+    {d:"DOWN",l:"Drive sequencing drills",to:"sequencing",g:"the stroke, taken apart",
+      fan:[{l:"reading the force curve",to:"forcecurve"},{l:"drag factor and the damper myth",to:"drag"},{l:"stroke rate ladders",to:"ratework"}]},
+    {d:"LEFT",l:"The aerobic engine",to:"engine",g:"one facet around"},
+    {d:"RIGHT",l:"The trunk — transmission, not engine",to:"trunk",g:"the other way around"}
+  ]
+},
+
+engine:{
+  t:"The aerobic engine underneath everything",
+  alt:"movement-family level",
+  lvl:3, ring:5,
+  ins:["2 levels","3 above","6 facets","medium"],
+  sc:"The largest facet on the ring by hours, and the one that actually sets the 2k ceiling. Neighbours: the erg work on one side, the hinge round the other.",
+  rd:`<p>A 2k is roughly <span class="num">75–85%</span> aerobic. Whatever the gym gives you, the number on the monitor is mostly a statement about oxygen delivery and utilisation. This is the facet where hours, not intensity, do the work.</p>
+  <p>The structure that has survived scrutiny is <b>polarised</b>: about <span class="num">80%</span> of training volume easy — genuinely easy, conversational, rate <span class="num">18–22</span>, heart rate below the first threshold — and about <span class="num">20%</span> hard, at or above threshold. The failure mode for self-coached rowers is the grey zone: hours at a pace too hard to accumulate volume and too easy to drive adaptation.</p>
+  <p>Within the hard <span class="num">20%</span>, the highest-yield sessions for 2k are threshold work (<span class="num">4×2000 m</span>, <span class="num">3×10:00</span>) and VO₂-oriented intervals (<span class="num">4×1000 m</span>, <span class="num">8×500 m</span>, <span class="num">5×4:00</span>). And the engine is not machine-specific — running, cycling, skiing and the SkiErg all build central aerobic capacity that transfers, which matters if your season includes anything other than rowing.</p>`,
+  illo:`<svg viewBox="0 0 520 165" xmlns="http://www.w3.org/2000/svg">
+    <text x="0" y="12" fill="#93afb4" font-family="ui-monospace,monospace" font-size="10">POLARISED vs. GREY ZONE — SAME HOURS</text>
+    <text x="0" y="44" fill="#5bc8c4" font-family="ui-monospace,monospace" font-size="9">POLARISED</text>
+    <rect x="90" y="32" width="330" height="16" fill="#5bc8c4"/><rect x="420" y="32" width="80" height="16" fill="#f0b429"/>
+    <text x="0" y="88" fill="#d0703a" font-family="ui-monospace,monospace" font-size="9">GREY ZONE</text>
+    <rect x="90" y="76" width="120" height="16" fill="#5bc8c4"/><rect x="210" y="76" width="250" height="16" fill="#d0703a"/><rect x="460" y="76" width="40" height="16" fill="#f0b429"/>
+    <g font-family="ui-monospace,monospace" font-size="9" fill="#93afb4">
+      <text x="90" y="112">easy · below LT1</text><text x="250" y="112" fill="#d0703a">neither one thing nor the other</text><text x="430" y="112" fill="#f0b429">hard</text>
+    </g>
+    <text x="90" y="140" fill="#93afb4" font-family="ui-monospace,monospace" font-size="9">the top line accumulates volume AND delivers stimulus. the bottom line does neither well.</text>
+  </svg>`,
+  cap:"Two identical training weeks by the clock. Only one of them is a plan.",
+  mv:[
+    {d:"UP",l:"Back to the movement list",to:"root",g:"the whole ring"},
+    {d:"DOWN",l:"Steady state — the 80%",to:"steady",g:"where the hours go",
+      fan:[{l:"threshold and VO₂ intervals",to:"intervals"},{l:"cross-modal transfer: ski, bike, run",to:"crossmodal"}]},
+    {d:"LEFT",l:"The hip hinge and posterior chain",to:"hinge",g:"one facet around"},
+    {d:"RIGHT",l:"The erg itself: stroke-specific work",to:"ergwork",g:"the other way around"}
+  ]
+},
+
+/* ---------------- L4: THE MOVEMENTS ---------------- */
+deadlift:{
+  t:"The deadlift — trap-bar and conventional",
+  alt:"movement level",
+  lvl:4, ring:0,
+  ins:["1 level","4 above","3 siblings","medium"],
+  sc:"The heaviest thing a rower does. Everything around it on this ring is a variation on making the hips extend against resistance.",
+  rd:`<p>The deadlift is the closest gym analogue to the drive's middle third: a simultaneous knee and hip extension against a load, initiated from a compressed position, with the spine holding neutral throughout. Rowers who deadlift well tend to have a first <span class="num">10</span> strokes and a sprint that others do not.</p>
+  <p><b>Trap-bar</b> is usually the better default. The load sits in line with the body rather than in front of it, which lowers lumbar shear, allows a more upright and knee-dominant pull, and lets an already-fatigued athlete train heavy with less technical risk. <b>Conventional</b> earns its place when you specifically want more hip-dominant loading and a stricter positional test.</p>
+  <p>Prescription that fits inside a rowing week: <span class="num">3–5 sets of 3–5</span> at roughly <span class="num">80–87%</span>, one heavy session weekly, a second lighter or variation-based session if the schedule allows. Stop the set when bar speed drops or position changes — the last grinding rep costs recovery you owe to Sunday's long piece and gives back almost nothing.</p>
+  <p class="num">At home: a loaded hex-bar substitute is the gap most home gyms have. Heavy dumbbell or block-loaded RDLs and a machine-based hinge with eccentric overload cover most of it; the GHD covers the rest.</p>`,
+  illo:`<svg viewBox="0 0 520 170" xmlns="http://www.w3.org/2000/svg">
+    <text x="0" y="12" fill="#93afb4" font-family="ui-monospace,monospace" font-size="10">LOAD LINE — WHY TRAP-BAR IS KINDER TO A ROWER'S BACK</text>
+    <g stroke="#5bc8c4" stroke-width="2" fill="none">
+      <circle cx="130" cy="46" r="8"/><path d="M130 54 L 140 100 L 136 146"/><path d="M130 62 L 118 108"/>
+    </g>
+    <line x1="118" y1="20" x2="118" y2="160" stroke="#f0b429" stroke-dasharray="3 3"/>
+    <circle cx="118" cy="108" r="5" fill="#f0b429"/>
+    <text x="66" y="166" fill="#5bc8c4" font-family="ui-monospace,monospace" font-size="9">TRAP-BAR · LOAD IN LINE</text>
+    <g stroke="#d0703a" stroke-width="2" fill="none">
+      <circle cx="360" cy="52" r="8"/><path d="M360 60 L 374 102 L 370 146"/><path d="M360 68 L 344 110"/>
+    </g>
+    <line x1="322" y1="20" x2="322" y2="160" stroke="#d0703a" stroke-dasharray="3 3"/>
+    <circle cx="322" cy="110" r="5" fill="#d0703a"/>
+    <path d="M326 110 L 342 110" stroke="#d0703a"/>
+    <text x="296" y="166" fill="#d0703a" font-family="ui-monospace,monospace" font-size="9">CONVENTIONAL · LONGER MOMENT ARM</text>
+  </svg>`,
+  cap:"Same weight, different lever. The offset from hip to bar is the whole argument.",
+  mv:[
+    {d:"UP",l:"The hip hinge family",to:"hinge",g:"the family this belongs to"},
+    {d:"DOWN",l:"Rate of force development at the catch",to:"rfd",g:"below max strength sits speed of force"},
+    {d:"LEFT",l:"The RDL and hamstring eccentrics",to:"rdl",g:"the slower sibling"},
+    {d:"RIGHT",l:"Does max strength actually predict a 2k?",to:"strength2k",g:"frontier · check the claim"}
+  ]
+},
+
+rdl:{
+  t:"Romanian deadlifts and hamstring eccentrics",
+  alt:"movement level",
+  lvl:4, ring:0.5,
+  ins:["1 level","4 above","3 siblings","fine"],
+  sc:"One step sideways from the deadlift: same hinge, slower, longer, and biased at the tissue that fails first.",
+  rd:`<p>The hamstrings do something specific in rowing that no other muscle does: they decelerate the body on the recovery and control the compression into the catch, then immediately reverse into hip extension. That is an eccentric-then-concentric demand at long muscle length, <span class="num">240</span> times.</p>
+  <p>The <b>RDL</b> trains exactly that. Load in the hands, hips travelling back, knees softly bent and static, spine neutral, descending until the hamstrings — not the low back — say stop. Sets of <span class="num">6–8</span> with a deliberate <span class="num">3-second</span> eccentric build both strength and length, and RDLs are far easier to recover from than heavy conventional pulls, which makes them the better in-season staple.</p>
+  <p>The other half of this position is <b>Nordic curls and GHD raises</b> — knee-flexion eccentrics. The evidence for eccentric hamstring work reducing strain injury in sprint sports is among the strongest in the field; for rowers the argument is more about tolerating end-range compression at the catch without the pelvis tucking under. Start with <span class="num">2–3 sets of 3–5</span> assisted, and expect to be sore for days after the first session. That soreness is the adaptation you came for; do not chase it twice in a week.</p>`,
+  illo:`<svg viewBox="0 0 520 165" xmlns="http://www.w3.org/2000/svg">
+    <text x="0" y="12" fill="#93afb4" font-family="ui-monospace,monospace" font-size="10">HAMSTRING LENGTH THROUGH THE STROKE</text>
+    <line x1="40" y1="130" x2="500" y2="130" stroke="#1e4a56"/>
+    <line x1="40" y1="130" x2="40" y2="30" stroke="#1e4a56"/>
+    <path d="M50 50 C 140 52, 200 108, 260 118 C 330 128, 420 66, 490 46" fill="none" stroke="#5bc8c4" stroke-width="2"/>
+    <g font-family="ui-monospace,monospace" font-size="9" fill="#93afb4">
+      <text x="44" y="146">CATCH</text><text x="230" y="146">FINISH</text><text x="440" y="146">CATCH</text>
+      <text x="0" y="40">long</text><text x="0" y="128">short</text>
+    </g>
+    <rect x="330" y="34" width="160" height="96" fill="#f0b429" opacity=".12"/>
+    <text x="336" y="30" fill="#f0b429" font-family="ui-monospace,monospace" font-size="9">eccentric control zone — the RDL's territory</text>
+  </svg>`,
+  cap:"The recovery is where hamstrings lengthen under control. That is the phase RDLs and Nordics rehearse.",
+  mv:[
+    {d:"UP",l:"The hip hinge family",to:"hinge",g:"the family above"},
+    {d:"DOWN",l:"Tempo, time under tension and eccentric load",to:"tempo",g:"the mechanism under the prescription"},
+    {d:"LEFT",l:"Hip and ankle range that gates the catch",to:"dorsi",g:"the mobility side of the same problem"},
+    {d:"RIGHT",l:"The deadlift — trap-bar and conventional",to:"deadlift",g:"back to the heavy sibling"}
+  ]
+},
+
+squat:{
+  t:"Back squat, front squat and the depth question",
+  alt:"movement level",
+  lvl:4, ring:1,
+  ins:["1 level","4 above","3 siblings","medium"],
+  sc:"Under the leg drive facet. Around you: the single-leg variants and the explosive variants of the same pattern.",
+  rd:`<p>Squatting builds the knee extensor force the drive spends, and it is the main way to keep the catch position available under load. The choice between <b>back</b> and <b>front</b> squat is mostly a choice about what fails first. The back squat allows more load and more posterior chain contribution; the front squat forces an upright trunk and a braced anterior core, and it politely dumps the bar when position degrades instead of letting you grind a rounded rep.</p>
+  <p>For rowers, depth is the non-negotiable variable. A squat cut at parallel trains a range the stroke barely uses; full-depth squatting loads the knee and hip at angles that appear in every single catch. If depth is not available, that is a mobility finding, not a reason to load a shallow squat — and it is worth chasing, because the same restriction is limiting compression on the erg.</p>
+  <p>Programming: <span class="num">3–5 sets of 3–6</span>, one primary session weekly, kept well clear of a hard interval session. In heavy erg weeks, drop to a single maintenance set-count rather than dropping the lift entirely; strength decays slowly but positions decay fast.</p>`,
+  illo:`<svg viewBox="0 0 520 170" xmlns="http://www.w3.org/2000/svg">
+    <text x="0" y="12" fill="#93afb4" font-family="ui-monospace,monospace" font-size="10">TRUNK ANGLE UNDER LOAD</text>
+    <g stroke="#5bc8c4" stroke-width="2" fill="none">
+      <circle cx="140" cy="52" r="8"/><path d="M140 60 L 144 104"/><path d="M144 104 L 122 132 L 130 152"/><path d="M144 104 L 166 132 L 158 152"/>
+      <rect x="122" y="40" width="36" height="6" fill="#f0b429" stroke="none"/>
+    </g>
+    <text x="96" y="166" fill="#5bc8c4" font-family="ui-monospace,monospace" font-size="9">FRONT SQUAT · UPRIGHT</text>
+    <g stroke="#93afb4" stroke-width="2" fill="none">
+      <circle cx="370" cy="58" r="8"/><path d="M370 66 L 386 106"/><path d="M386 106 L 364 132 L 372 152"/><path d="M386 106 L 408 132 L 400 152"/>
+      <rect x="356" y="66" width="36" height="6" fill="#f0b429" stroke="none"/>
+    </g>
+    <text x="330" y="166" fill="#93afb4" font-family="ui-monospace,monospace" font-size="9">BACK SQUAT · MORE HINGE</text>
+    <line x1="255" y1="26" x2="255" y2="156" stroke="#1e4a56" stroke-dasharray="3 4"/>
+  </svg>`,
+  cap:"Bar position decides trunk angle, and trunk angle decides which pattern you are actually rehearsing.",
+  mv:[
+    {d:"UP",l:"The squat pattern and leg drive",to:"legdrive",g:"the family above"},
+    {d:"DOWN",l:"Ankle and hip range that gates the catch",to:"dorsi",g:"why depth is missing when it is missing"},
+    {d:"LEFT",l:"Single-leg work and asymmetry",to:"singleleg",g:"the correction sibling"},
+    {d:"RIGHT",l:"Jumps and triple extension power",to:"jump",g:"the fast sibling"}
+  ]
+},
+
+singleleg:{
+  t:"Split squats, step-ups and the asymmetry problem",
+  alt:"movement level",
+  lvl:4, ring:1.5,
+  ins:["1 level","4 above","3 siblings","fine"],
+  sc:"A quieter position than the barbell lifts, and the one most likely to be skipped by the athlete who needs it.",
+  rd:`<p>Rowing looks symmetrical and is not. Sweep rowers rotate to one side thousands of times a session; scullers are cleaner but still develop a dominant leg, and the seat is happy to let a stronger side do more of the drive without telling you. Bilateral lifts hide this — the strong leg quietly covers.</p>
+  <p><b>Rear-foot-elevated split squats</b> are the workhorse: deep range, high stability demand, honest side-to-side comparison, and low spinal load, which matters when your back is already paying for the erg. <b>Step-ups</b> at a height that puts the working knee near catch-angle flexion are the closest single-leg match to the drive itself.</p>
+  <p>Use them diagnostically as well as developmentally. Match reps to the weaker side, not the stronger. A difference of more than roughly <span class="num">10%</span> in load or reps between sides is worth chasing for a block. And because these are low-load relative to a squat, they slot into weeks when heavy bilateral work would compete with hard rowing — which is most weeks in season.</p>`,
+  illo:`<svg viewBox="0 0 520 155" xmlns="http://www.w3.org/2000/svg">
+    <text x="0" y="12" fill="#93afb4" font-family="ui-monospace,monospace" font-size="10">WHAT A BILATERAL LIFT HIDES</text>
+    <rect x="60" y="34" width="180" height="20" fill="#5bc8c4"/><rect x="60" y="60" width="180" height="20" fill="#5bc8c4"/>
+    <text x="248" y="50" fill="#93afb4" font-family="ui-monospace,monospace" font-size="9">squat: total looks fine</text>
+    <rect x="60" y="100" width="180" height="20" fill="#5bc8c4"/><rect x="60" y="126" width="126" height="20" fill="#d0703a"/>
+    <text x="248" y="116" fill="#93afb4" font-family="ui-monospace,monospace" font-size="9">split squat: the gap appears</text>
+    <text x="248" y="142" fill="#d0703a" font-family="ui-monospace,monospace" font-size="9">-30% on the trailing side</text>
+    <g font-family="ui-monospace,monospace" font-size="9" fill="#93afb4"><text x="26" y="48">L</text><text x="26" y="74">R</text><text x="26" y="114">L</text><text x="26" y="140">R</text></g>
+  </svg>`,
+  cap:"The same athlete, measured two ways. Only one of them reports the asymmetry.",
+  mv:[
+    {d:"UP",l:"The squat pattern and leg drive",to:"legdrive",g:"the family above"},
+    {d:"DOWN",l:"Ankle and hip range that gates the catch",to:"dorsi",g:"often the real cause of a side difference"},
+    {d:"LEFT",l:"Jumps and triple extension power",to:"jump",g:"one sibling over"},
+    {d:"RIGHT",l:"Back squat, front squat and depth",to:"squat",g:"back to the barbell"}
+  ]
+},
+
+jump:{
+  t:"Jumps, med-ball throws and triple extension power",
+  alt:"movement level",
+  lvl:4, ring:1.6,
+  ins:["1 level","4 above","3 siblings","coarse"],
+  sc:"The fast corner of the leg-drive facet. Small doses, high quality, and no place at all in a fatigued session.",
+  rd:`<p>A 2k is not a power event, but the first <span class="num">5–10</span> strokes are, and so is every rate change and the last <span class="num">200 m</span>. The quality that governs those moments is <b>rate of force development</b> — how quickly you can express force — and heavy slow lifting only partly trains it.</p>
+  <p>The movements are simple: <b>countermovement jumps</b>, <b>box jumps</b> (step down, never jump down), <b>broad jumps</b>, and <b>med-ball throws</b> — overhead, rotational, and the seated chest pass, which maps neatly onto the finish. Loaded jumps and light trap-bar jumps sit in the same family.</p>
+  <p>Dose is the whole game. <span class="num">3–5 sets of 3–5</span> reps, full recovery between sets, placed at the <i>start</i> of a session when the nervous system is fresh, and cut the moment jump height or throw distance drops. Grain here is coarse: there is no half-jump, and there is no useful "endurance" version. Twenty sloppy jumps at the end of a hard erg is not power training — it is just impact.</p>`,
+  illo:`<svg viewBox="0 0 520 165" xmlns="http://www.w3.org/2000/svg">
+    <text x="0" y="12" fill="#93afb4" font-family="ui-monospace,monospace" font-size="10">FORCE–TIME: WHERE EACH TRAINING MODE LIVES</text>
+    <line x1="40" y1="136" x2="500" y2="136" stroke="#1e4a56"/><line x1="40" y1="136" x2="40" y2="28" stroke="#1e4a56"/>
+    <path d="M40 136 C 90 60, 140 42, 260 36" fill="none" stroke="#93afb4" stroke-width="2"/>
+    <path d="M40 136 C 60 88, 90 74, 180 70" fill="none" stroke="#f0b429" stroke-width="2"/>
+    <line x1="110" y1="28" x2="110" y2="136" stroke="#d0703a" stroke-dasharray="3 3"/>
+    <text x="116" y="42" fill="#d0703a" font-family="ui-monospace,monospace" font-size="9">time available in one stroke</text>
+    <text x="270" y="40" fill="#93afb4" font-family="ui-monospace,monospace" font-size="9">max strength — arrives late</text>
+    <text x="190" y="72" fill="#f0b429" font-family="ui-monospace,monospace" font-size="9">explosive — arrives in time</text>
+    <text x="4" y="40" fill="#93afb4" font-family="ui-monospace,monospace" font-size="9">F</text><text x="470" y="152" fill="#93afb4" font-family="ui-monospace,monospace" font-size="9">time</text>
+  </svg>`,
+  cap:"A stroke does not wait for peak force. What matters is how much of it arrives before the handle moves away.",
+  mv:[
+    {d:"UP",l:"The squat pattern and leg drive",to:"legdrive",g:"the family above"},
+    {d:"DOWN",l:"Rate of force development at the catch",to:"rfd",g:"the mechanism this trains"},
+    {d:"LEFT",l:"Back squat, front squat and depth",to:"squat",g:"the heavy sibling"},
+    {d:"RIGHT",l:"Single-leg work and asymmetry",to:"singleleg",g:"the other sibling"}
+  ]
+},
+
+rowpull:{
+  t:"Barbell rows, chest-supported rows and the heavy horizontal pull",
+  alt:"movement level",
+  lvl:4, ring:2,
+  ins:["1 level","4 above","3 siblings","medium"],
+  sc:"The gym movement that looks most like the stroke and transfers less than it looks like it should — but still earns its place.",
+  rd:`<p>The horizontal pull's contribution is connection, not propulsion. Trained heavy, it builds a mid-back that holds its shape when <span class="num">700+ N</span> arrives from the legs, and it builds the lats and rhomboids that keep the handle path level through the finish.</p>
+  <p>Three variants, three jobs. The <b>barbell row</b> is the heaviest and also the most spine-taxing — treat it as a hinge with a pull attached, and account for it in your weekly back load. The <b>chest-supported row</b> removes the lumbar cost entirely, which makes it the correct default in a heavy erg block. The <b>single-arm dumbbell row</b> adds an anti-rotation demand and exposes side differences.</p>
+  <p>Cue retraction before flexion: initiate with the shoulder blade, finish with the elbow. Rowers reliably pull with the arms first in the gym for the same reason they do it on the water. Sets of <span class="num">5–8</span>, two sessions a week, and keep total pulling roughly balanced with whatever pressing you do — which for most rowers means adding pressing rather than cutting pulls.</p>`,
+  illo:`<svg viewBox="0 0 520 160" xmlns="http://www.w3.org/2000/svg">
+    <text x="0" y="12" fill="#93afb4" font-family="ui-monospace,monospace" font-size="10">ORDER OF OPERATIONS AT THE FINISH</text>
+    <g stroke="#5bc8c4" fill="none" stroke-width="2">
+      <path d="M60 60 L 200 60"/><circle cx="60" cy="60" r="6" fill="#5bc8c4"/>
+      <path d="M200 60 L 240 60" stroke="#f0b429" stroke-width="6"/>
+    </g>
+    <text x="60" y="44" fill="#5bc8c4" font-family="ui-monospace,monospace" font-size="9">1 · scapula retracts</text>
+    <text x="196" y="44" fill="#f0b429" font-family="ui-monospace,monospace" font-size="9">2 · elbow bends</text>
+    <g stroke="#d0703a" fill="none" stroke-width="2">
+      <path d="M60 120 L 160 120" stroke-dasharray="4 3"/><circle cx="60" cy="120" r="6" fill="#d0703a"/>
+      <path d="M160 120 L 240 120" stroke="#d0703a" stroke-width="6"/>
+    </g>
+    <text x="60" y="146" fill="#d0703a" font-family="ui-monospace,monospace" font-size="9">arms first — the shoulder gives up the link</text>
+  </svg>`,
+  cap:"Same movement, two sequences. The one that starts at the scapula is the one that holds under load.",
+  mv:[
+    {d:"UP",l:"The horizontal pull family",to:"pull",g:"the family above"},
+    {d:"DOWN",l:"Tempo and time under tension",to:"tempo",g:"how to load it without adding spinal cost"},
+    {d:"LEFT",l:"Pull-ups and lat work",to:"pullup",g:"the vertical sibling"},
+    {d:"RIGHT",l:"Shoulder durability work",to:"shoulder",g:"the boring sibling that prevents things"}
+  ]
+},
+
+pullup:{
+  t:"Pull-ups and lat development",
+  alt:"movement level",
+  lvl:4, ring:2.4,
+  ins:["1 level","4 above","3 siblings","fine"],
+  sc:"Vertical pulling, in a sport that pulls horizontally. The connection is the lat, which does both.",
+  rd:`<p>The lat is the reason vertical pulling belongs in a rowing programme. It attaches from the humerus to the thoracolumbar fascia and the pelvis, which makes it the mechanical bridge between the arm and the trunk — precisely the link that has to stay stiff for leg force to reach the handle.</p>
+  <p><b>Pull-ups</b> also give you a relative-strength check that scales with body mass, which matters in a weight-sensitive sport. Weighted pull-ups in the <span class="num">4–6</span> rep range build strength; sets of <span class="num">8–12</span> build the lat mass that shows up as a firmer connection. Neutral or pronated grip both work; supinated shifts load to the biceps, which is not what you came for.</p>
+  <p>If pull-ups are limited, use lat pulldowns and progress toward bodyweight rather than substituting endless band-assisted reps. And keep an eye on volume: rowers already accumulate enormous pulling load on the water. Two to three sets, twice a week, is a real dose. This is the position where more is most reliably worse.</p>`,
+  illo:`<svg viewBox="0 0 520 160" xmlns="http://www.w3.org/2000/svg">
+    <text x="0" y="12" fill="#93afb4" font-family="ui-monospace,monospace" font-size="10">LATISSIMUS DORSI — ARM TO PELVIS IN ONE SHEET</text>
+    <g stroke="#1e4a56" fill="none" stroke-width="1.4">
+      <circle cx="250" cy="42" r="12"/><path d="M250 54 L 250 128"/><path d="M250 66 L 208 84"/><path d="M250 66 L 292 84"/>
+    </g>
+    <path d="M212 82 C 236 92, 244 108, 248 128 C 252 108, 262 92, 288 82" fill="#5bc8c4" opacity=".35" stroke="#5bc8c4"/>
+    <path d="M208 84 L 176 68" stroke="#f0b429" stroke-width="4"/>
+    <path d="M292 84 L 324 68" stroke="#f0b429" stroke-width="4"/>
+    <text x="330" y="70" fill="#f0b429" font-family="ui-monospace,monospace" font-size="9">handle</text>
+    <text x="258" y="146" fill="#5bc8c4" font-family="ui-monospace,monospace" font-size="9">pelvis / thoracolumbar fascia</text>
+  </svg>`,
+  cap:"Train the bridge, not just the arm. The lat is what makes the trunk and the handle one object.",
+  mv:[
+    {d:"UP",l:"The horizontal pull family",to:"pull",g:"the family above"},
+    {d:"DOWN",l:"Tempo and time under tension",to:"tempo",g:"the loading variable that fits here"},
+    {d:"LEFT",l:"Shoulder durability work",to:"shoulder",g:"one sibling over"},
+    {d:"RIGHT",l:"Heavy horizontal rows",to:"rowpull",g:"back to the heavy pull"}
+  ]
+},
+
+shoulder:{
+  t:"Shoulder durability — the boring work that keeps you rowing",
+  alt:"movement level",
+  lvl:4, ring:2.7,
+  ins:["1 level","4 above","3 siblings","fine"],
+  sc:"The least glamorous position in this orb, and the one most likely to be the difference between a season and an interrupted one.",
+  rd:`<p>Rowing is relentlessly pull-dominant and thoracic-flexion-heavy. Over a season that produces a predictable pattern: internally rotated, protracted shoulders, tight pecs and lats, and weak lower traps, rhomboids and external rotators. The result is anterior shoulder pain, scapular dyskinesis, and sometimes a rib cage that stops tolerating load.</p>
+  <p>The countermeasures are small and unexciting. <b>Face pulls</b> and <b>band pull-aparts</b> for external rotation and retraction. <b>Prone Y and T raises</b> for lower trap. <b>Overhead pressing</b> — genuinely useful, because it restores the overhead range rowing quietly removes. Thoracic extension over a roller before sessions.</p>
+  <p>Dose: <span class="num">2–3 sets of 12–15</span>, two or three times a week, attached to the end of lifting sessions where you will actually do them. This position has a low ceiling for performance gain and a high floor for performance protection, and knowing which of those you are buying is what keeps it in the programme at the right size.</p>`,
+  illo:`<svg viewBox="0 0 520 150" xmlns="http://www.w3.org/2000/svg">
+    <text x="0" y="12" fill="#93afb4" font-family="ui-monospace,monospace" font-size="10">THE SEASON DRIFT</text>
+    <g stroke="#5bc8c4" fill="none" stroke-width="2">
+      <circle cx="130" cy="52" r="9"/><path d="M130 61 L 130 116"/><path d="M112 74 L 148 74"/>
+    </g>
+    <text x="86" y="140" fill="#5bc8c4" font-family="ui-monospace,monospace" font-size="9">SEPTEMBER</text>
+    <g stroke="#d0703a" fill="none" stroke-width="2">
+      <circle cx="370" cy="58" r="9"/><path d="M370 67 C 378 84, 372 100, 374 116"/><path d="M352 78 C 362 70, 380 70, 390 78"/>
+    </g>
+    <text x="336" y="140" fill="#d0703a" font-family="ui-monospace,monospace" font-size="9">MARCH, UNCORRECTED</text>
+    <path d="M200 84 L 290 84" stroke="#1e4a56"/><path d="M282 79 L 292 84 L 282 89" fill="none" stroke="#1e4a56"/>
+    <text x="196" y="74" fill="#93afb4" font-family="ui-monospace,monospace" font-size="9">10,000 pulls</text>
+  </svg>`,
+  cap:"Nothing in the sport pushes. Over a season, the posture reflects the ledger.",
+  mv:[
+    {d:"UP",l:"The horizontal pull family",to:"pull",g:"the family above"},
+    {d:"DOWN",l:"Rib stress injury — where this gets serious",to:"ribs",g:"the failure this is preventing"},
+    {d:"LEFT",l:"Heavy horizontal rows",to:"rowpull",g:"one sibling over"},
+    {d:"RIGHT",l:"Pull-ups and lat work",to:"pullup",g:"the other sibling"}
+  ]
+},
+
+antiflex:{
+  t:"Anti-flexion and anti-rotation trunk work",
+  alt:"movement level",
+  lvl:4, ring:3,
+  ins:["1 level","4 above","2 siblings","medium"],
+  sc:"Under the trunk facet. Small movements, or rather movements defined by their refusal to move.",
+  rd:`<p>Trunk training for rowers is graded by what does <i>not</i> happen. The categories worth your time are anti-flexion (resisting being folded), anti-rotation (resisting being twisted), and anti-lateral-flexion (resisting being tipped).</p>
+  <p>The list is short. <b>Plank variants</b> loaded with weight on the back rather than extended in time — a two-minute plank trains patience, a <span class="num">30-second</span> plank with <span class="num">20 kg</span> on your back trains bracing. <b>Ab wheel rollouts</b> and <b>body saws</b> for anti-extension at length. <b>Dead bugs</b> for coordinating breath with brace. <b>Pallof presses</b> and <b>suitcase carries</b> for the rotational and lateral cases. <b>Loaded carries</b> generally, which train the whole system while it is fatigued and walking.</p>
+  <p>What to skip: sit-ups, weighted Russian twists into end-range rotation, and anything that rehearses spinal flexion under load. You have a machine at home that already asks your lumbar spine to flex and extend a few hundred times a session — the gym's job is to build the tissue that resists it, not to add repetitions of it.</p>`,
+  illo:`<svg viewBox="0 0 520 155" xmlns="http://www.w3.org/2000/svg">
+    <text x="0" y="12" fill="#93afb4" font-family="ui-monospace,monospace" font-size="10">TRAIN THE REFUSAL, NOT THE MOVEMENT</text>
+    <g stroke="#5bc8c4" stroke-width="2.5" fill="none"><path d="M50 74 L 210 74"/></g>
+    <path d="M130 40 L 130 66" stroke="#f0b429" stroke-width="2"/><path d="M124 60 L 130 68 L 136 60" fill="none" stroke="#f0b429" stroke-width="2"/>
+    <text x="50" y="102" fill="#5bc8c4" font-family="ui-monospace,monospace" font-size="9">LOAD APPLIED · SHAPE HELD</text>
+    <g stroke="#d0703a" stroke-width="2.5" fill="none"><path d="M300 74 C 350 74, 360 104, 460 104"/></g>
+    <path d="M380 44 L 380 76" stroke="#f0b429" stroke-width="2"/><path d="M374 70 L 380 78 L 386 70" fill="none" stroke="#f0b429" stroke-width="2"/>
+    <text x="300" y="132" fill="#d0703a" font-family="ui-monospace,monospace" font-size="9">LOAD APPLIED · SHAPE LOST</text>
+  </svg>`,
+  cap:"Every trunk exercise worth doing is a test of whether the shape survives the load.",
+  mv:[
+    {d:"UP",l:"The trunk facet",to:"trunk",g:"the family above"},
+    {d:"DOWN",l:"Rib stress injury — the sport's signature failure",to:"ribs",g:"where this stops being theory"},
+    {d:"LEFT",l:"Heavy horizontal rows",to:"rowpull",g:"the pull that also loads the brace"},
+    {d:"RIGHT",l:"The deadlift",to:"deadlift",g:"the heaviest bracing exercise there is"}
+  ]
+},
+
+ribs:{
+  t:"Rib stress injury — the sport's signature failure",
+  alt:"clinical level",
+  lvl:5, ring:3.3,
+  ins:["frontier below","5 above","2 siblings","coarse"],
+  sc:"A narrow, well-lit room. The literature here is real but thinner than the stakes deserve.",
+  rd:`<p>Rib stress fracture is the injury that most reliably takes a serious rower out of a season, and it is nearly unique to the sport. Reported incidence in competitive squads clusters around <span class="num">6–12%</span>, with higher rates in women, in sweep rowers, and in athletes going through a sharp increase in load — a new training block, a return from a break, a switch to ergs over winter.</p>
+  <p>The mechanism is repetitive bending stress on the mid-lateral ribs, produced by the opposing pull of <b>serratus anterior</b> (pulling ribs laterally and forward) and the <b>external obliques and rhomboids</b> during the drive. Bone remodels to that stress; when load rises faster than remodelling, it fails. Contributing factors that show up repeatedly: sudden volume increases, low bone mineral density, low energy availability, and poor trunk endurance late in sessions.</p>
+  <p>The practical implications are unglamorous. Progress volume gradually — the <span class="num">10%</span> rule is crude but directionally right. Eat enough to support the training. Keep trunk endurance work in the programme so position holds at the end of long pieces. And treat unexplained localised chest-wall pain that worsens with rowing as a rib injury until proven otherwise, and get it assessed rather than rowing through it.</p>`,
+  illo:`<svg viewBox="0 0 520 165" xmlns="http://www.w3.org/2000/svg">
+    <text x="0" y="12" fill="#93afb4" font-family="ui-monospace,monospace" font-size="10">OPPOSING PULLS ON THE MID-LATERAL RIB</text>
+    <g stroke="#1e4a56" fill="none" stroke-width="1.6">
+      <path d="M260 34 L 260 140"/>
+      <path d="M260 52 C 300 50, 336 66, 342 88"/><path d="M260 52 C 220 50, 184 66, 178 88"/>
+      <path d="M260 74 C 306 72, 346 90, 350 112"/><path d="M260 74 C 214 72, 174 90, 170 112"/>
+      <path d="M260 96 C 300 94, 336 112, 340 132"/><path d="M260 96 C 220 94, 184 112, 180 132"/>
+    </g>
+    <path d="M350 112 L 400 100" stroke="#f0b429" stroke-width="3"/><text x="404" y="98" fill="#f0b429" font-family="ui-monospace,monospace" font-size="9">serratus →</text>
+    <path d="M300 118 L 262 132" stroke="#d0703a" stroke-width="3"/><text x="196" y="152" fill="#d0703a" font-family="ui-monospace,monospace" font-size="9">← obliques / rhomboids</text>
+    <circle cx="342" cy="106" r="9" fill="none" stroke="#d0703a" stroke-dasharray="2 2"/>
+  </svg>`,
+  cap:"The rib sits between two muscles pulling opposite ways, several hundred times per session.",
+  mv:[
+    {d:"UP",l:"Anti-flexion and anti-rotation work",to:"antiflex",g:"the prevention side"},
+    {d:"DOWN",l:"What is still unknown about load and rib failure",to:"ribfrontier",g:"frontier · the edge of the evidence"},
+    {d:"LEFT",l:"Shoulder durability work",to:"shoulder",g:"the neighbouring failure mode"},
+    {d:"RIGHT",l:"Steady state and how volume gets added",to:"steady",g:"where the load increase actually happens"}
+  ]
+},
+
+sequencing:{
+  t:"Drive sequencing drills — the stroke taken apart",
+  alt:"technique level",
+  lvl:4, ring:4,
+  ins:["1 level","4 above","3 siblings","fine"],
+  sc:"The erg facet's centre. Cheap, unglamorous, and the fastest route to a better split for most self-coached rowers.",
+  rd:`<p>The sequence is legs, then body, then arms on the drive, and the exact reverse on the recovery: arms away, body over, then knees break. Rowers who shoot the slide — legs extending while the handle stays put — lose a large fraction of leg force into an unloaded seat.</p>
+  <p>Drills that fix it, in order of usefulness. <b>Legs-only rowing</b>: arms straight, body still, drive with legs alone. <b>Legs-and-body</b>: add the swing, no arm bend. <b>Pause drills</b>: full stroke with a two-second hold at arms-away, then at body-over, then at quarter-slide — the pauses expose exactly where the sequence collapses. <b>Reverse-pick drill</b>: build from arms-only up to full stroke over five minutes as a warm-up, every session.</p>
+  <p>Run these at low rate (<span class="num">16–20</span>) and moderate pressure, five to ten minutes at the start of steady sessions. The transfer is immediate and measurable: watch whether your split at a fixed rate improves over a block without any change in fitness. That difference is the sequence.</p>`,
+  illo:`<svg viewBox="0 0 520 170" xmlns="http://www.w3.org/2000/svg">
+    <text x="0" y="12" fill="#93afb4" font-family="ui-monospace,monospace" font-size="10">SEQUENCE ON THE DRIVE</text>
+    <g font-family="ui-monospace,monospace" font-size="9" fill="#93afb4">
+      <text x="0" y="46">legs</text><text x="0" y="76">body</text><text x="0" y="106">arms</text>
+    </g>
+    <rect x="60" y="34" width="180" height="16" fill="#5bc8c4"/>
+    <rect x="170" y="64" width="160" height="16" fill="#5bc8c4"/>
+    <rect x="280" y="94" width="130" height="16" fill="#5bc8c4"/>
+    <text x="60" y="134" fill="#5bc8c4" font-family="ui-monospace,monospace" font-size="9">OVERLAPPING, IN ORDER — CONTINUOUS FORCE</text>
+    <rect x="60" y="150" width="120" height="10" fill="#d0703a"/>
+    <rect x="230" y="150" width="90" height="10" fill="#d0703a"/>
+    <text x="330" y="159" fill="#d0703a" font-family="ui-monospace,monospace" font-size="9">a gap = shooting the slide</text>
+  </svg>`,
+  cap:"Segments should overlap, not queue. The gap between legs and body is where watts disappear.",
+  mv:[
+    {d:"UP",l:"The erg facet",to:"ergwork",g:"the family above"},
+    {d:"DOWN",l:"Reading the force curve",to:"forcecurve",g:"the instrument that shows the sequence"},
+    {d:"LEFT",l:"Drag factor and the damper myth",to:"drag",g:"one sibling over"},
+    {d:"RIGHT",l:"Stroke rate ladders",to:"ratework",g:"the other sibling"}
+  ]
+},
+
+forcecurve:{
+  t:"Reading the force curve",
+  alt:"instrument level",
+  lvl:5, ring:3.95,
+  ins:["1 level","5 above","3 siblings","fine"],
+  sc:"A graph on a monitor that most rowers have never opened, containing a diagnosis of their entire stroke.",
+  rd:`<p>On a Concept2 PM5, <i>Display → Force Curve</i> plots handle force against handle position for every stroke. The ideal shape is a smooth, full curve with an early rise, a single rounded peak somewhat before the midpoint, and no shoulders or dips.</p>
+  <p>The common faults are legible at a glance. A <b>slow front end</b> — the curve starting shallow and late — means force is being applied after the legs have already moved, the classic slide shoot. A <b>double hump</b> means the segments are queueing instead of overlapping: legs, gap, then back and arms. A <b>peak too far right</b> means the stroke is arm-dominant and finishing hard rather than driving early. A <b>low, wide</b> curve at good splits means rate is doing the work that force should.</p>
+  <p>Use it as a session tool rather than an obsession: check it during the warm-up, do a set of pause drills, check it again. The area under the curve is the work done per stroke — which is why an athlete with a better shape can hold the same split at a lower rate, and arrive at the sprint with something left.</p>`,
+  illo:`<svg viewBox="0 0 520 175" xmlns="http://www.w3.org/2000/svg">
+    <text x="0" y="12" fill="#93afb4" font-family="ui-monospace,monospace" font-size="10">FOUR CURVES, FOUR DIAGNOSES</text>
+    <g stroke="#1e4a56" fill="none"><path d="M30 120 L 150 120"/><path d="M170 120 L 290 120"/><path d="M310 120 L 430 120"/></g>
+    <path d="M30 120 C 60 44, 100 46, 150 118" fill="none" stroke="#5bc8c4" stroke-width="2"/>
+    <text x="34" y="140" fill="#5bc8c4" font-family="ui-monospace,monospace" font-size="9">GOOD · early, full</text>
+    <path d="M170 120 C 210 118, 218 60, 290 118" fill="none" stroke="#d0703a" stroke-width="2"/>
+    <text x="174" y="140" fill="#d0703a" font-family="ui-monospace,monospace" font-size="9">LATE · slide shoot</text>
+    <path d="M310 120 C 328 70, 344 92, 358 74 C 380 50, 404 84, 430 118" fill="none" stroke="#d0703a" stroke-width="2"/>
+    <text x="314" y="140" fill="#d0703a" font-family="ui-monospace,monospace" font-size="9">DOUBLE HUMP · queued</text>
+    <path d="M30 168 C 70 150, 110 148, 150 166" fill="none" stroke="#f0b429" stroke-width="2"/>
+    <text x="160" y="166" fill="#f0b429" font-family="ui-monospace,monospace" font-size="9">LOW &amp; WIDE · rate is doing the work</text>
+  </svg>`,
+  cap:"Force against handle position. Shape is technique; area is work per stroke.",
+  mv:[
+    {d:"UP",l:"Drive sequencing drills",to:"sequencing",g:"what you do about what you see"},
+    {d:"DOWN",l:"Rate of force development at the catch",to:"rfd",g:"the physiology behind the front end"},
+    {d:"LEFT",l:"Stroke rate ladders",to:"ratework",g:"one sibling over"},
+    {d:"RIGHT",l:"Drag factor and the damper myth",to:"drag",g:"what changes the curve's shape by machine"}
+  ]
+},
+
+drag:{
+  t:"Drag factor and the damper myth",
+  alt:"instrument level",
+  lvl:5, ring:4.9,
+  ins:["floor","5 above","3 siblings","coarse"],
+  sc:"A small, precise room. Almost everything here is settled, and almost everyone gets it wrong anyway.",
+  rd:`<p>The damper lever is not resistance. It controls how much air enters the flywheel housing, and the machine's actual measure of that is the <b>drag factor</b> — the flywheel's deceleration rate between strokes, shown under <i>Display → Drag Factor</i>. Drag factor is comparable between machines; damper settings are not, because dust and altitude change the relationship.</p>
+  <p>What drag factor changes is the <i>character</i> of the stroke, not its difficulty. High drag is a heavier, slower, more strength-biased stroke; low drag is lighter and faster and rewards rate. The monitor calculates pace from work done either way, so you cannot cheat a split by moving the lever — you can only choose which quality you are training.</p>
+  <p>Working numbers: most rowers race a 2k at a drag factor around <span class="num">120–135</span> (men) and <span class="num">110–125</span> (women), with steady state often <span class="num">10–15</span> lower. Very high drag (<span class="num">150+</span>) increases lumbar load and is best used deliberately, in short strength-endurance pieces, not as a default. Grain here is coarse: set it, note it, and stop fiddling.</p>`,
+  illo:`<svg viewBox="0 0 520 165" xmlns="http://www.w3.org/2000/svg">
+    <text x="0" y="12" fill="#93afb4" font-family="ui-monospace,monospace" font-size="10">DAMPER ≠ DRAG FACTOR</text>
+    <g stroke="#1e4a56" fill="none" stroke-width="1.4"><circle cx="120" cy="86" r="44"/><circle cx="120" cy="86" r="6" fill="#1e4a56"/></g>
+    <g stroke="#5bc8c4" stroke-width="1.6" fill="none">
+      <path d="M120 42 L 120 62"/><path d="M164 86 L 144 86"/><path d="M120 130 L 120 110"/><path d="M76 86 L 96 86"/>
+    </g>
+    <path d="M120 86 L 152 62" stroke="#f0b429" stroke-width="2.5"/>
+    <text x="70" y="150" fill="#93afb4" font-family="ui-monospace,monospace" font-size="9">flywheel + vent</text>
+    <g font-family="ui-monospace,monospace" font-size="10" fill="#93afb4">
+      <text x="230" y="56">damper 1–10  = how much air gets in</text>
+      <text x="230" y="82" fill="#f0b429">drag factor    = what the machine measures</text>
+      <text x="230" y="108">same DF on any machine = same stroke</text>
+      <text x="230" y="134" fill="#5bc8c4">race range · 110–135 for most rowers</text>
+    </g>
+  </svg>`,
+  cap:"The lever is an input. The drag factor is the only number that travels between machines.",
+  mv:[
+    {d:"UP",l:"The erg facet",to:"ergwork",g:"back up to the family"},
+    {d:"DOWN",l:"You have hit the floor here — see what is above it",to:"sequencing",g:"settled terrain · nothing deeper to render honestly"},
+    {d:"LEFT",l:"Reading the force curve",to:"forcecurve",g:"one sibling over"},
+    {d:"RIGHT",l:"Stroke rate ladders",to:"ratework",g:"the other sibling"}
+  ]
+},
+
+ratework:{
+  t:"Stroke rate ladders and rate–power decoupling",
+  alt:"technique level",
+  lvl:4, ring:4.55,
+  ins:["1 level","4 above","3 siblings","fine"],
+  sc:"The most under-used training tool on the erg, and the one that converts technique into pacing freedom.",
+  rd:`<p>Split is a product of force per stroke and strokes per minute. Most self-coached rowers only know how to raise the second one, which caps their race: they arrive at <span class="num">500 m</span> to go already at rate <span class="num">32</span> with no gear left.</p>
+  <p>The fix is to train power at every rate. A <b>rate ladder</b> runs something like <span class="num">4 minutes</span> each at r18, r20, r22, r24, r26, holding the same target split throughout and letting the effort rise. A <b>rate pyramid</b> goes up and back down. <b>Rate-capped pieces</b> — "hold <span class="num">2:00</span> at r20 for <span class="num">3×8 minutes</span>" — are the single best session for building force per stroke.</p>
+  <p>The measurement worth tracking is watts per stroke at a fixed rate, or equivalently your split at r20 for a fixed duration. When that improves and nothing else changed, you have made the stroke stronger rather than just faster. On race day it means you can raise the rate as a tactical choice instead of as your only source of speed.</p>`,
+  illo:`<svg viewBox="0 0 520 165" xmlns="http://www.w3.org/2000/svg">
+    <text x="0" y="12" fill="#93afb4" font-family="ui-monospace,monospace" font-size="10">RATE LADDER — SPLIT HELD, RATE CLIMBS, EFFORT RISES</text>
+    <line x1="40" y1="132" x2="500" y2="132" stroke="#1e4a56"/>
+    <g fill="#5bc8c4">
+      <rect x="60" y="112" width="60" height="20"/><rect x="140" y="100" width="60" height="32"/>
+      <rect x="220" y="88" width="60" height="44"/><rect x="300" y="76" width="60" height="56"/><rect x="380" y="64" width="60" height="68"/>
+    </g>
+    <g font-family="ui-monospace,monospace" font-size="9" fill="#93afb4" text-anchor="middle">
+      <text x="90" y="146">r18</text><text x="170" y="146">r20</text><text x="250" y="146">r22</text><text x="330" y="146">r24</text><text x="410" y="146">r26</text>
+    </g>
+    <line x1="50" y1="46" x2="470" y2="46" stroke="#f0b429" stroke-width="2" stroke-dasharray="5 3"/>
+    <text x="52" y="40" fill="#f0b429" font-family="ui-monospace,monospace" font-size="9">split held constant — 2:00/500m</text>
+  </svg>`,
+  cap:"Bars are perceived effort. The flat line is the split you refuse to let move.",
+  mv:[
+    {d:"UP",l:"The erg facet",to:"ergwork",g:"the family above"},
+    {d:"DOWN",l:"Reading the force curve",to:"forcecurve",g:"what changes when force per stroke rises"},
+    {d:"LEFT",l:"Threshold and VO₂ intervals",to:"intervals",g:"the physiological sibling"},
+    {d:"RIGHT",l:"Drive sequencing drills",to:"sequencing",g:"back to the drills"}
+  ]
+},
+
+steady:{
+  t:"Steady state — the eighty percent",
+  alt:"training-zone level",
+  lvl:4, ring:5,
+  ins:["1 level","4 above","2 siblings","medium"],
+  sc:"The largest, quietest room in the orb. Most of the hours live here and most of the adaptation comes from them.",
+  rd:`<p>Steady state is aerobic base work performed below the first lactate threshold: conversational, nasal-breathing-possible, heart rate roughly <span class="num">60–75%</span> of maximum, stroke rate <span class="num">18–22</span>, sessions of <span class="num">40–90</span> minutes. It builds the things that actually raise a 2k — capillary density, mitochondrial volume, stroke volume, fat oxidation, and the structural tolerance to keep training.</p>
+  <p>The discipline is going easy enough. The reliable check is rate and breathing rather than a pace target: if you cannot speak a full sentence, or if you are drifting up in rate to hold the split, it is no longer steady state. Rowers who cheat this end up with a training week of uniformly moderate sessions and a plateau that does not respond to more work.</p>
+  <p>Two ways to make the hours count double. Do <b>technical drills</b> inside them — pauses, legs-only, rate caps — because low intensity is when motor patterns can actually change. And progress volume gradually: this is precisely where the rib and back injuries are seeded, by the enthusiastic addition of forty minutes a week.</p>`,
+  illo:`<svg viewBox="0 0 520 160" xmlns="http://www.w3.org/2000/svg">
+    <text x="0" y="12" fill="#93afb4" font-family="ui-monospace,monospace" font-size="10">WHAT LOW INTENSITY BUILDS</text>
+    <g font-family="ui-monospace,monospace" font-size="9" fill="#93afb4">
+      <text x="0" y="46">mitochondria</text><text x="0" y="72">capillaries</text><text x="0" y="98">stroke volume</text><text x="0" y="124">tissue tolerance</text>
+    </g>
+    <g>
+      <rect x="120" y="34" width="290" height="14" fill="#5bc8c4"/><rect x="410" y="34" width="60" height="14" fill="#f0b429"/>
+      <rect x="120" y="60" width="310" height="14" fill="#5bc8c4"/><rect x="430" y="60" width="40" height="14" fill="#f0b429"/>
+      <rect x="120" y="86" width="200" height="14" fill="#5bc8c4"/><rect x="320" y="86" width="150" height="14" fill="#f0b429"/>
+      <rect x="120" y="112" width="330" height="14" fill="#5bc8c4"/><rect x="450" y="112" width="20" height="14" fill="#f0b429"/>
+    </g>
+    <text x="120" y="150" fill="#5bc8c4" font-family="ui-monospace,monospace" font-size="9">■ easy volume</text>
+    <text x="240" y="150" fill="#f0b429" font-family="ui-monospace,monospace" font-size="9">■ hard intervals</text>
+  </svg>`,
+  cap:"Most of the adaptations that decide a 2k are bought slowly, at a pace that feels too easy.",
+  mv:[
+    {d:"UP",l:"The aerobic engine",to:"engine",g:"the family above"},
+    {d:"DOWN",l:"Concurrent training: what lifting costs this",to:"interference",g:"frontier · the interference question"},
+    {d:"LEFT",l:"Threshold and VO₂ intervals",to:"intervals",g:"the hard twenty percent"},
+    {d:"RIGHT",l:"Cross-modal transfer: ski, bike, run",to:"crossmodal",g:"the same engine, other machines"}
+  ]
+},
+
+intervals:{
+  t:"Threshold and VO₂ intervals — the hard twenty percent",
+  alt:"training-zone level",
+  lvl:4, ring:5.3,
+  ins:["1 level","4 above","2 siblings","medium"],
+  sc:"Small volume, large consequence. The sessions that hurt and the ones that are worth the hurt are not always the same sessions.",
+  rd:`<p>Two distinct jobs live here. <b>Threshold work</b> raises the fraction of VO₂max you can hold: <span class="num">4×2000 m</span> with <span class="num">4</span> minutes rest, <span class="num">3×10:00</span>, or <span class="num">30–40</span> minutes total at around <span class="num">2k+10–14</span> seconds per <span class="num">500 m</span>. <b>VO₂ work</b> raises the ceiling itself: <span class="num">4×1000 m</span>, <span class="num">8×500 m</span>, <span class="num">5×4:00</span>, at or slightly above 2k pace with near-full recovery.</p>
+  <p>Race-specific sessions come later in a block and are the most brutal and most predictive: <span class="num">4×750 m</span> or <span class="num">6×500 m</span> at target 2k pace, with the rest shortening as the season progresses.</p>
+  <p>Two rules keep this from eating the programme. Cap it at roughly <span class="num">two</span> hard sessions a week, three at most in a peak block; the extra one usually costs more in the steady state it displaces than it returns. And treat the interval session as a test of pacing discipline — going out three seconds fast on the first rep and fading is the most common way to convert a good session into fatigue with no stimulus.</p>`,
+  illo:`<svg viewBox="0 0 520 170" xmlns="http://www.w3.org/2000/svg">
+    <text x="0" y="12" fill="#93afb4" font-family="ui-monospace,monospace" font-size="10">SPLIT ACROSS FOUR REPS — TWO WAYS TO RUN 4×1000m</text>
+    <line x1="40" y1="130" x2="500" y2="130" stroke="#1e4a56"/>
+    <g font-family="ui-monospace,monospace" font-size="9" fill="#93afb4" text-anchor="middle">
+      <text x="100" y="146">rep 1</text><text x="210" y="146">rep 2</text><text x="320" y="146">rep 3</text><text x="430" y="146">rep 4</text>
+    </g>
+    <polyline points="100,52 210,60 320,58 430,50" fill="none" stroke="#5bc8c4" stroke-width="2"/>
+    <polyline points="100,36 210,66 320,92 430,112" fill="none" stroke="#d0703a" stroke-width="2" stroke-dasharray="4 3"/>
+    <text x="230" y="42" fill="#5bc8c4" font-family="ui-monospace,monospace" font-size="9">even — the session worked</text>
+    <text x="300" y="112" fill="#d0703a" font-family="ui-monospace,monospace" font-size="9">fade — one hard rep and three tired ones</text>
+    <text x="4" y="52" fill="#93afb4" font-family="ui-monospace,monospace" font-size="9">fast</text>
+  </svg>`,
+  cap:"The same total work. Only the even set trained the quality you were aiming at.",
+  mv:[
+    {d:"UP",l:"The aerobic engine",to:"engine",g:"the family above"},
+    {d:"DOWN",l:"Concurrent training interference",to:"interference",g:"frontier · what these cost your lifting"},
+    {d:"LEFT",l:"Cross-modal transfer: ski, bike, run",to:"crossmodal",g:"one sibling over"},
+    {d:"RIGHT",l:"Steady state — the eighty percent",to:"steady",g:"the other sibling"}
+  ]
+},
+
+crossmodal:{
+  t:"Cross-modal transfer — SkiErg, BikeErg, running",
+  alt:"training-zone level",
+  lvl:4, ring:5.6,
+  ins:["1 level","4 above","2 siblings","medium"],
+  sc:"The doorway out of the rowing-only programme, and the one that matters if your season contains anything else.",
+  rd:`<p>Aerobic adaptations split into <b>central</b> and <b>peripheral</b>. Central adaptations — cardiac output, stroke volume, plasma volume — are largely mode-independent and transfer freely between machines. Peripheral adaptations — capillarisation, mitochondrial density, motor pattern efficiency in the specific muscles used — are largely mode-specific and do not.</p>
+  <p>The practical consequence: cycling, skiing and running all build the engine, but only rowing makes you efficient at rowing. A rough working estimate from the endurance literature is that roughly half the benefit crosses over, and the fraction is highest for closely-matched modes. <b>SkiErg</b> is the nearest neighbour for a rower — same flywheel, same hinge-and-pull pattern, different emphasis. <b>BikeErg</b> shares the leg drive and is the lowest-impact way to add aerobic volume when the back needs a break from compression.</p>
+  <p>Use cross-modal work for three things: adding volume without adding spinal load, keeping the engine going through a niggle, and building the aerobic base for a season where rowing is only one of the events. Keep the sport-specific fraction dominant when a rowing test is the goal — the specificity principle from the top of this orb has not been repealed.</p>`,
+  illo:`<svg viewBox="0 0 520 160" xmlns="http://www.w3.org/2000/svg">
+    <text x="0" y="12" fill="#93afb4" font-family="ui-monospace,monospace" font-size="10">WHAT CROSSES OVER</text>
+    <g font-family="ui-monospace,monospace" font-size="9" fill="#93afb4"><text x="0" y="50">central</text><text x="0" y="98">peripheral</text></g>
+    <rect x="90" y="38" width="360" height="16" fill="#5bc8c4"/>
+    <text x="456" y="51" fill="#5bc8c4" font-family="ui-monospace,monospace" font-size="9">~all</text>
+    <rect x="90" y="86" width="120" height="16" fill="#5bc8c4"/><rect x="210" y="86" width="240" height="16" fill="#1e4a56"/>
+    <text x="456" y="99" fill="#93afb4" font-family="ui-monospace,monospace" font-size="9">~some</text>
+    <g font-family="ui-monospace,monospace" font-size="9" fill="#f0b429">
+      <text x="90" y="132">SkiErg — nearest</text><text x="230" y="132">BikeErg — leg drive, no spine load</text>
+    </g>
+    <text x="90" y="150" fill="#93afb4" font-family="ui-monospace,monospace" font-size="9">running — furthest, still builds the heart</text>
+  </svg>`,
+  cap:"The heart does not care which machine. The muscles very much do.",
+  mv:[
+    {d:"UP",l:"The aerobic engine",to:"engine",g:"the family above"},
+    {d:"DOWN",l:"Specificity of adaptation",to:"adapt",g:"straight up the shaft to the governing principle"},
+    {d:"LEFT",l:"Steady state — the eighty percent",to:"steady",g:"one sibling over"},
+    {d:"RIGHT",l:"Threshold and VO₂ intervals",to:"intervals",g:"the other sibling"}
+  ]
+},
+
+/* ---------------- L5: MECHANISMS ---------------- */
+rfd:{
+  t:"Rate of force development at the catch",
+  alt:"mechanism level",
+  lvl:5, ring:0.2,
+  ins:["frontier below","5 above","2 siblings","fine"],
+  sc:"Below the lifts, in the region where physiology explains why some strong people are slow.",
+  rd:`<p>Maximum strength is how much force you can eventually produce. Rate of force development is how much of it arrives in the time you actually have. At race rate the drive phase lasts roughly <span class="num">0.6–0.8</span> seconds, and peak force needs to arrive early in it — a rower whose force peaks at <span class="num">300 ms</span> uses far more of their maximum than one who needs <span class="num">500 ms</span>.</p>
+  <p>RFD is trained by intent more than by load: moving a moderate weight as fast as possible, jumping, throwing, and lifting heavy with the deliberate intention of accelerating the bar. It is also the quality that degrades fastest with fatigue, which is one reason technique falls apart in the third <span class="num">500 m</span>.</p>
+  <p>The practical translation for a rower: keep a small amount of genuinely explosive work in every week, early in the session, and stop when quality drops. And note the ceiling — RFD matters most in the first strokes, rate changes and the sprint. It will not rescue a stroke with a broken sequence or an engine that is too small.</p>`,
+  illo:`<svg viewBox="0 0 520 160" xmlns="http://www.w3.org/2000/svg">
+    <text x="0" y="12" fill="#93afb4" font-family="ui-monospace,monospace" font-size="10">FORCE ARRIVING INSIDE ONE DRIVE (≈0.7 s)</text>
+    <line x1="40" y1="128" x2="500" y2="128" stroke="#1e4a56"/><line x1="40" y1="128" x2="40" y2="28" stroke="#1e4a56"/>
+    <rect x="40" y="28" width="200" height="100" fill="#f0b429" opacity=".08"/>
+    <path d="M40 128 C 80 52, 120 44, 240 40" fill="none" stroke="#5bc8c4" stroke-width="2"/>
+    <path d="M40 128 C 120 118, 200 70, 330 44" fill="none" stroke="#d0703a" stroke-width="2" stroke-dasharray="4 3"/>
+    <line x1="240" y1="28" x2="240" y2="128" stroke="#f0b429" stroke-dasharray="3 3"/>
+    <text x="246" y="40" fill="#f0b429" font-family="ui-monospace,monospace" font-size="9">handle leaves · time is up</text>
+    <text x="60" y="52" fill="#5bc8c4" font-family="ui-monospace,monospace" font-size="9">high RFD</text>
+    <text x="150" y="112" fill="#d0703a" font-family="ui-monospace,monospace" font-size="9">high max strength, slow rise</text>
+  </svg>`,
+  cap:"Two athletes with the same 1RM. Only the shaded area gets into the boat.",
+  mv:[
+    {d:"UP",l:"Jumps and triple extension power",to:"jump",g:"the training that builds it"},
+    {d:"DOWN",l:"Does max strength predict a 2k at all?",to:"strength2k",g:"frontier · where the evidence thins"},
+    {d:"LEFT",l:"The deadlift",to:"deadlift",g:"the max-strength sibling"},
+    {d:"RIGHT",l:"Reading the force curve",to:"forcecurve",g:"where RFD becomes visible"}
+  ]
+},
+
+tempo:{
+  t:"Tempo, time under tension and eccentric load",
+  alt:"mechanism level",
+  lvl:5, ring:2.2,
+  ins:["floor","5 above","2 siblings","fine"],
+  sc:"A loading variable rather than a movement — the dial that lets a rower get a stimulus without the joint cost.",
+  rd:`<p>When training time is contested and recovery is scarce, tempo is the cheapest way to increase stimulus without increasing load. Slowing the eccentric to <span class="num">3–4</span> seconds raises time under tension and mechanical work per rep, drives hypertrophy and tendon adaptation, and does it at a weight that costs the spine and nervous system less.</p>
+  <p>For rowers there is a second reason. The recovery phase of the stroke is an eccentric-control problem, and the catch is an end-range one. Tempo RDLs, tempo split squats and controlled-eccentric rows build tissue at exactly the lengths where rowing loads it.</p>
+  <p>Two cautions. Tempo work produces more delayed soreness per unit of load than fast lifting, so introduce it at the start of a block, not the week before a test. And it does not replace heavy work — maximal force still needs near-maximal loads. Think of tempo as the way to keep a stimulus alive during heavy erg weeks, and as the way to load an athlete whose back does not currently want a barbell.</p>`,
+  illo:`<svg viewBox="0 0 520 155" xmlns="http://www.w3.org/2000/svg">
+    <text x="0" y="12" fill="#93afb4" font-family="ui-monospace,monospace" font-size="10">SAME SET, DIFFERENT TENSION BUDGET</text>
+    <g font-family="ui-monospace,monospace" font-size="9" fill="#93afb4"><text x="0" y="52">fast · 100kg</text><text x="0" y="102">3s ecc · 75kg</text></g>
+    <g fill="#5bc8c4">
+      <rect x="110" y="40" width="26" height="16"/><rect x="146" y="40" width="26" height="16"/><rect x="182" y="40" width="26" height="16"/>
+      <rect x="218" y="40" width="26" height="16"/><rect x="254" y="40" width="26" height="16"/>
+    </g>
+    <g fill="#f0b429">
+      <rect x="110" y="90" width="62" height="16"/><rect x="182" y="90" width="62" height="16"/><rect x="254" y="90" width="62" height="16"/>
+      <rect x="326" y="90" width="62" height="16"/><rect x="398" y="90" width="62" height="16"/>
+    </g>
+    <text x="292" y="53" fill="#93afb4" font-family="ui-monospace,monospace" font-size="9">~12 s under tension</text>
+    <text x="110" y="132" fill="#f0b429" font-family="ui-monospace,monospace" font-size="9">~30 s under tension, 25% less load on the spine</text>
+  </svg>`,
+  cap:"Five reps either way. The bar weight is not the only variable that decides the stimulus.",
+  mv:[
+    {d:"UP",l:"The RDL and hamstring eccentrics",to:"rdl",g:"where this is applied first"},
+    {d:"DOWN",l:"Settled ground — nothing deeper to render honestly",to:"rdl",g:"the mechanism bottoms out here"},
+    {d:"LEFT",l:"Heavy horizontal rows",to:"rowpull",g:"the other lift this rescues"},
+    {d:"RIGHT",l:"Concurrent training interference",to:"interference",g:"frontier · why you needed the cheaper option"}
+  ]
+},
+
+dorsi:{
+  t:"Ankle and hip range — the gate on the catch",
+  alt:"mechanism level",
+  lvl:5, ring:1.2,
+  ins:["floor","5 above","2 siblings","medium"],
+  sc:"A small room that quietly limits several of the larger ones above it.",
+  rd:`<p>Full compression at the catch needs a specific set of ranges: ankle dorsiflexion to let the shin travel over the foot, hip flexion with a neutral lumbar spine to let the trunk fold over the thigh, and enough hamstring length to let the pelvis stay rotated forward rather than tucking under.</p>
+  <p>When any of those is short, the body borrows the range from the lumbar spine. That is the rounded catch — and it is simultaneously a power leak (force applied to a flexing spine instead of the footplate) and the main mechanism behind rowing low back pain.</p>
+  <p>The tests are quick. <b>Knee-to-wall</b> for dorsiflexion: aim for roughly <span class="num">10 cm</span> of toe-to-wall clearance with the heel down. A bodyweight squat to full depth with heels flat. A seated pelvic-tilt check at full compression on the erg. The work that changes it is loaded and slow — deep squats and split squats through full range, calf raises with a paused stretch at the bottom, and end-range hip work — not brief passive stretching before a session. Foot stretcher height on the erg is the other lever: raising the heels reduces the dorsiflexion demand and is a legitimate adjustment, not a concession.</p>`,
+  illo:`<svg viewBox="0 0 520 165" xmlns="http://www.w3.org/2000/svg">
+    <text x="0" y="12" fill="#93afb4" font-family="ui-monospace,monospace" font-size="10">WHERE THE MISSING RANGE GETS BORROWED FROM</text>
+    <g stroke="#5bc8c4" stroke-width="2" fill="none">
+      <path d="M60 140 L 120 140"/><path d="M110 140 L 96 96"/><path d="M96 96 L 150 96"/><path d="M150 96 L 138 56"/><circle cx="136" cy="46" r="9"/>
+    </g>
+    <text x="52" y="160" fill="#5bc8c4" font-family="ui-monospace,monospace" font-size="9">RANGE AVAILABLE — SPINE NEUTRAL</text>
+    <g stroke="#d0703a" stroke-width="2" fill="none">
+      <path d="M330 140 L 390 140"/><path d="M382 140 L 372 100"/><path d="M372 100 L 424 100"/>
+      <path d="M424 100 C 418 78, 404 70, 404 56"/><circle cx="402" cy="46" r="9"/>
+    </g>
+    <path d="M424 96 L 452 88" stroke="#d0703a"/>
+    <text x="322" y="160" fill="#d0703a" font-family="ui-monospace,monospace" font-size="9">RANGE SHORT — THE LUMBAR SPINE PAYS</text>
+  </svg>`,
+  cap:"The catch needs a fixed amount of flexion. Something supplies it, and the spine will if the ankle will not.",
+  mv:[
+    {d:"UP",l:"Back squat, front squat and depth",to:"squat",g:"the lift that both tests and trains this"},
+    {d:"DOWN",l:"Settled ground — nothing deeper to render honestly",to:"squat",g:"the mechanism bottoms out here"},
+    {d:"LEFT",l:"Drive sequencing drills",to:"sequencing",g:"how the restriction shows up on the erg"},
+    {d:"RIGHT",l:"The RDL and hamstring eccentrics",to:"rdl",g:"the tissue side of the same gate"}
+  ]
+},
+
+/* ---------------- FRONTIERS ---------------- */
+strength2k:{
+  t:"Frontier — how much of a 2k does strength actually explain?",
+  alt:"the edge of the evidence",
+  lvl:5, ring:0.8, frontier:true,
+  ins:["unknown","5 above","open","coarse"],
+  sc:"You have driven past the floor of settled knowledge. What is here is an honest disagreement, not a fact.",
+  rd:`<p><b>What is established.</b> Anthropometry and aerobic capacity dominate 2k prediction. Height, lean mass and VO₂max together account for most of the between-athlete variance in trained populations. Strength measures do correlate with 2k time — reported correlations for lifts like the deadlift and squat typically land in the moderate range — but correlation among trained rowers is heavily confounded by body size: bigger athletes lift more <i>and</i> row faster.</p>
+  <p><b>What is genuinely open.</b> Whether <i>adding</i> strength to an already-trained rower improves 2k, and by how much. Intervention studies are small, short, and use varied protocols; effects are usually positive but modest, and largest in athletes who were weak to begin with. The honest summary: strength training reliably improves strength, plausibly improves 2k in under-strong athletes, and has an unclear marginal return once an athlete is already strong relative to their aerobic capacity.</p>
+  <p><b>The kind of blocker this is:</b> an information gap that is partly answerable and partly an untested assumption for you personally. The cheapest experiment available: hold your erg programme fixed, run a <span class="num">10–12</span> week strength block, and re-test the same 2k under the same conditions. Your own n=1 is more informative here than the literature's average, because the literature's average is dominated by athletes who are not you.</p>`,
+  illo:`<svg viewBox="0 0 520 165" xmlns="http://www.w3.org/2000/svg">
+    <text x="0" y="12" fill="#93afb4" font-family="ui-monospace,monospace" font-size="10">VARIANCE IN 2k TIME — ROUGH SHARE, TRAINED ATHLETES</text>
+    <rect x="0" y="30" width="200" height="24" fill="#5bc8c4"/><text x="8" y="47" fill="#08191f" font-family="ui-monospace,monospace" font-size="10">AEROBIC POWER</text>
+    <rect x="200" y="30" width="140" height="24" fill="#93afb4"/><text x="208" y="47" fill="#08191f" font-family="ui-monospace,monospace" font-size="10">SIZE / LEAN MASS</text>
+    <rect x="340" y="30" width="80" height="24" fill="#f0b429"/><text x="346" y="47" fill="#08191f" font-family="ui-monospace,monospace" font-size="9">TECHNIQUE</text>
+    <rect x="420" y="30" width="50" height="24" fill="#d0703a"/>
+    <rect x="470" y="30" width="30" height="24" fill="#1e4a56"/>
+    <text x="404" y="74" fill="#d0703a" font-family="ui-monospace,monospace" font-size="9">strength?</text>
+    <text x="452" y="92" fill="#93afb4" font-family="ui-monospace,monospace" font-size="9">unexplained</text>
+    <path d="M436 56 L 436 68" stroke="#d0703a"/><path d="M486 56 L 486 86" stroke="#1e4a56"/>
+    <text x="0" y="126" fill="#93afb4" font-family="ui-monospace,monospace" font-size="9">the width of the orange block is exactly what is in dispute — and it is wider</text>
+    <text x="0" y="142" fill="#93afb4" font-family="ui-monospace,monospace" font-size="9">for a novice or an under-strong athlete than for a developed one.</text>
+  </svg>`,
+  cap:"Frontier reading: the shares are approximate, and the disputed block is the one you would be buying.",
+  mv:[
+    {d:"UP",l:"What would have to be true for strength to matter more?",to:"rfd",g:"the condition: force must arrive in time"},
+    {d:"DOWN",l:"The cheapest experiment: a fixed-erg strength block",to:"deadlift",g:"go run it, then re-test"},
+    {d:"LEFT",l:"What is already established: the aerobic engine",to:"engine",g:"the part that is not in dispute"},
+    {d:"RIGHT",l:"The boldest live hypothesis: interference is the real cost",to:"interference",g:"the neighbouring frontier"}
+  ]
+},
+
+interference:{
+  t:"Frontier — concurrent training and the interference effect",
+  alt:"the edge of the evidence",
+  lvl:5, ring:5.45, frontier:true,
+  ins:["unknown","5 above","open","medium"],
+  sc:"The second frontier in this orb, and the one that decides how the first one is spent.",
+  rd:`<p><b>What is established.</b> High volumes of endurance training blunt strength and hypertrophy adaptations relative to strength training alone. The effect is real, dose-dependent, and larger for power and hypertrophy than for maximal strength. The reverse — strength work impairing endurance adaptation — is much weaker and mostly reflects fatigue rather than a molecular conflict.</p>
+  <p><b>What is genuinely open.</b> The mechanism, the size of the effect in already well-trained athletes, and how much scheduling actually rescues it. The common recommendations — separate sessions by at least <span class="num">3</span> hours, put the quality session first, avoid heavy legs immediately before a hard erg — are physiologically reasonable and only modestly supported by direct evidence. Nutrition and total recovery may matter more than session order.</p>
+  <p><b>The kind of blocker this is:</b> partly an information gap and partly a <b>taste call</b>. Even with perfect knowledge, an athlete with limited hours has to choose what to sacrifice, and no study settles a preference. For a rower whose goal is a 2k, the defensible default is to protect the aerobic work and treat lifting as a smaller, sharper input; for a rower whose limiter is clearly force production, invert it for a block and accept the aerobic cost knowingly.</p>`,
+  illo:`<svg viewBox="0 0 520 170" xmlns="http://www.w3.org/2000/svg">
+    <text x="0" y="12" fill="#93afb4" font-family="ui-monospace,monospace" font-size="10">INTERFERENCE — ASYMMETRIC, AND DOSE-DEPENDENT</text>
+    <line x1="40" y1="132" x2="500" y2="132" stroke="#1e4a56"/><line x1="40" y1="132" x2="40" y2="30" stroke="#1e4a56"/>
+    <path d="M40 60 C 140 62, 260 82, 470 118" fill="none" stroke="#d0703a" stroke-width="2"/>
+    <path d="M40 76 C 160 76, 300 78, 470 80" fill="none" stroke="#5bc8c4" stroke-width="2"/>
+    <text x="300" y="110" fill="#d0703a" font-family="ui-monospace,monospace" font-size="9">strength gain, as endurance volume rises</text>
+    <text x="300" y="72" fill="#5bc8c4" font-family="ui-monospace,monospace" font-size="9">endurance gain, as lifting rises</text>
+    <text x="150" y="152" fill="#93afb4" font-family="ui-monospace,monospace" font-size="9">→ volume of the OTHER modality</text>
+    <text x="0" y="44" fill="#93afb4" font-family="ui-monospace,monospace" font-size="9">gain</text>
+  </svg>`,
+  cap:"Frontier reading: the shapes are directionally supported; the exact slopes for a trained rower are not settled.",
+  mv:[
+    {d:"UP",l:"Specificity of adaptation",to:"adapt",g:"the principle this frontier tests"},
+    {d:"DOWN",l:"The cheapest experiment: separate them and re-measure",to:"steady",g:"hold volume, move the sessions, watch the erg"},
+    {d:"LEFT",l:"What is already tried: the polarised week",to:"engine",g:"the workaround that routes around the conflict"},
+    {d:"RIGHT",l:"Attack it directly: does the strength even pay?",to:"strength2k",g:"the neighbouring frontier"}
+  ]
+},
+
+ribfrontier:{
+  t:"Frontier — what still is not known about load and rib failure",
+  alt:"the edge of the evidence",
+  lvl:5, ring:3.6, frontier:true,
+  ins:["unknown","6 above","open","coarse"],
+  sc:"A small, sparsely furnished room. The clinical stakes here are much larger than the evidence base.",
+  rd:`<p><b>What is established.</b> Rib stress injury is common in competitive rowing, concentrated in the mid-lateral ribs, associated with rapid increases in training load, sweep rowing, ergometer blocks, low bone mineral density and low energy availability. Rest and graded return work; rowing through it does not.</p>
+  <p><b>What is genuinely open.</b> Almost every quantitative question. There is no validated load threshold, no reliable early screening test, and no consensus on which technique changes reduce risk — the serratus-versus-oblique mechanism is a well-supported model rather than a measured cause in individual athletes. Whether high drag factor meaningfully raises risk is asserted more often than it is demonstrated.</p>
+  <p><b>The kind of blocker this is:</b> a genuine <b>information gap</b> in the literature, not something an individual can resolve alone — and where the evidence is thin, the sensible response is conservative practice rather than confident prescription. Progress load gradually, keep energy intake matched to training, keep trunk endurance in the week, and treat localised chest-wall pain as a reason to get assessed rather than a reason to look up training thresholds. This is one of the few positions in this orb where the right next move is a clinician, not a workout.</p>`,
+  illo:`<svg viewBox="0 0 520 150" xmlns="http://www.w3.org/2000/svg">
+    <text x="0" y="12" fill="#93afb4" font-family="ui-monospace,monospace" font-size="10">THE EVIDENCE MAP</text>
+    <rect x="0" y="30" width="150" height="70" fill="#5bc8c4" opacity=".25" stroke="#5bc8c4"/>
+    <text x="12" y="56" fill="#5bc8c4" font-family="ui-monospace,monospace" font-size="9">KNOWN</text>
+    <text x="12" y="74" fill="#93afb4" font-family="ui-monospace,monospace" font-size="8">site, risk factors,</text>
+    <text x="12" y="88" fill="#93afb4" font-family="ui-monospace,monospace" font-size="8">that rest works</text>
+    <rect x="170" y="30" width="330" height="70" fill="#d0703a" opacity=".12" stroke="#d0703a" stroke-dasharray="4 3"/>
+    <text x="182" y="56" fill="#d0703a" font-family="ui-monospace,monospace" font-size="9">OPEN</text>
+    <text x="182" y="74" fill="#93afb4" font-family="ui-monospace,monospace" font-size="8">safe load thresholds · early screening · which technique cues help</text>
+    <text x="182" y="88" fill="#93afb4" font-family="ui-monospace,monospace" font-size="8">· whether drag factor matters · individual susceptibility</text>
+    <text x="0" y="128" fill="#93afb4" font-family="ui-monospace,monospace" font-size="9">the map is small and the territory is not. this is a real edge, not a gap in the writing.</text>
+  </svg>`,
+  cap:"Frontier reading: the known region is narrow, and most practical questions sit outside it.",
+  mv:[
+    {d:"UP",l:"Rib stress injury — the clinical picture",to:"ribs",g:"back inside the known region"},
+    {d:"DOWN",l:"The workaround: gradual load and trunk endurance",to:"antiflex",g:"what to do while the evidence is thin"},
+    {d:"LEFT",l:"Steady state — where load gets added",to:"steady",g:"the practice that seeds the injury"},
+    {d:"RIGHT",l:"Concurrent training interference",to:"interference",g:"the neighbouring frontier"}
+  ]
+}
+
+};
+
+/* ============================================================ engine */
+const START="root";
+let trail=[];
+let cur=null;
+
+const $=id=>document.getElementById(id);
+const dirOrder={UP:0,LEFT:1,RIGHT:2,DOWN:3};
+
+const LVLY=[50,76,102,128,152,174];
+function proj(n){
+  const th=(n.ring||0)/6*Math.PI*2;
+  const y=LVLY[n.lvl];
+  const dy=y-110;
+  const rx=Math.sqrt(Math.max(0,78*78-dy*dy))*0.9;
+  return {x:110+Math.sin(th)*rx, y:y, d:Math.cos(th)};
+}
+function coords(n){ const p=proj(n); return [p.x,p.y]; }
+
+/* every stop is a point on the orb; near side solid, far side faded */
+function drawPoints(){
+  const items=Object.entries(N).map(([k,v])=>({k,v,p:proj(v)}))
+    .sort((a,b)=>a.p.d-b.p.d);
+  $("nodes").innerHTML=items.map(({k,v,p})=>{
+    if(k===cur) return "";
+    const near=p.d>=0;
+    const visited=trail.includes(k);
+    const fill = v.frontier ? "#d0703a" : (visited ? "#5bc8c4" : "#2e6270");
+    const r = near ? (visited||v.frontier?3.4:2.8) : 2.1;
+    return `<circle class="pt" data-to="${k}" cx="${p.x.toFixed(1)}" cy="${p.y}" r="${r}"
+      fill="${fill}" opacity="${near?1:0.4}"><title>${v.t}</title></circle>`;
+  }).join("");
+  $("nodes").querySelectorAll(".pt").forEach(c=>{
+    c.addEventListener("click",()=>{ render(c.dataset.to); window.scrollTo({top:0,behavior:"smooth"}); });
+  });
+}
+
+function gauges(n){
+  const keys = ["depth below","ceiling above","ring width","grain"];
+  return keys.map((k,i)=>`<div class="gauge"><span class="k">${k}</span><span class="v">${n.ins[i]}</span></div>`).join("");
+}
+
+function moveHTML(m,i){
+  const cls = m.d==="UP"?"up":m.d==="DOWN"?"down":"";
+  const fan = (m.fan||[]).map(b=>`<button class="branch" data-to="${b.to}">${b.l}</button>`).join("");
+  return `<div class="padwrap ${cls}">
+    <button class="pad" data-to="${m.to}">
+      <span class="dir">${i+1} · ${m.d}</span>${m.l}
+      <span class="gloss">${m.g||""}</span>
+    </button>
+    ${fan?`<div class="fan">${fan}</div>`:""}
+  </div>`;
+}
+
+function render(id,record=true){
+  const n=N[id]; if(!n) return;
+  if(record){ if(trail[trail.length-1]!==id) trail.push(id); }
+  cur=id;
+
+  // orb marker + trail line
+  const [x,y]=coords(n);
+  $("marker").setAttribute("cx",x); $("marker").setAttribute("cy",y);
+  $("markerhalo").setAttribute("cx",x); $("markerhalo").setAttribute("cy",y);
+  $("trailline").setAttribute("points",trail.map(t=>coords(N[t]).join(",")).join(" "));
+  drawPoints();
+  $("gauges").innerHTML=gauges(n);
+  $("shapelbl").textContent = n.frontier ? "frontier room" : "centered";
+
+  // trail
+  $("trail").innerHTML = trail.map((t,i)=>
+    i===trail.length-1 ? `<em>${N[t].t.split(" — ")[0]}</em>` : `<b>${N[t].t.split(" — ")[0]}</b>`
+  ).join(" → ");
+
+  // moves sorted into compass order
+  const mv=[...n.mv].sort((a,b)=>dirOrder[a.d]-dirOrder[b.d]);
+
+  $("view").innerHTML=`
+    <div class="${n.frontier?"frontier":""}">
+      <h2 class="pos">${n.t}</h2>
+      <div class="alt">${n.alt}</div>
+      <div class="scenery">${n.sc}</div>
+      <div class="reading">${n.rd}</div>
+      <div class="figure">${n.illo}<div class="figcap">${n.cap}</div></div>
+      <div class="compass">
+        <div class="lbl">moves · field of view 4 · step 1</div>
+        <div class="cross">${mv.map(moveHTML).join("")}</div>
+      </div>
+    </div>`;
+
+  $("view").querySelectorAll("[data-to]").forEach(b=>{
+    b.addEventListener("click",()=>{ render(b.dataset.to); window.scrollTo({top:0,behavior:"smooth"}); });
+  });
+}
+
+$("btnBack").addEventListener("click",()=>{
+  if(trail.length>1){ trail.pop(); render(trail[trail.length-1],false); }
+});
+$("btnHome").addEventListener("click",()=>{ trail=[]; render(START); });
+
+$("btnAll").addEventListener("click",()=>{
+  const d=$("dossier");
+  if(!d.classList.contains("on")){
+    d.innerHTML = `<h2 style="font-family:var(--display);letter-spacing:.14em;text-transform:uppercase;font-size:13px;color:#93afb4;margin-top:44px">Every stop in this orb</h2>` +
+      Object.keys(N).map(k=>{
+        const n=N[k];
+        return `<div class="stop ${n.frontier?"frontier":""}">
+          <h2>${n.t}</h2><div class="alt">${n.alt}</div>
+          <div class="scenery">${n.sc}</div>
+          <div class="reading">${n.rd}</div>
+          <div class="figure">${n.illo}<div class="figcap">${n.cap}</div></div>
+        </div>`;
+      }).join("");
+    d.classList.add("on");
+    $("btnAll").textContent="hide all stops";
+    d.scrollIntoView({behavior:"smooth"});
+  } else {
+    d.classList.remove("on"); d.innerHTML="";
+    $("btnAll").textContent="print all stops";
+  }
+});
+
+document.addEventListener("keydown",e=>{
+  const n=N[cur]; if(!n) return;
+  const map={ArrowUp:"UP",ArrowDown:"DOWN",ArrowLeft:"LEFT",ArrowRight:"RIGHT"};
+  const d=map[e.key];
+  if(d){ const m=n.mv.find(x=>x.d===d); if(m){ e.preventDefault(); render(m.to); window.scrollTo({top:0,behavior:"smooth"}); } }
+  if(e.key>="1"&&e.key<="4"){
+    const mv=[...n.mv].sort((a,b)=>dirOrder[a.d]-dirOrder[b.d]);
+    const m=mv[+e.key-1]; if(m){ render(m.to); window.scrollTo({top:0,behavior:"smooth"}); }
+  }
+});
+
+render(START);
+</script>
+</body>
+</html>
